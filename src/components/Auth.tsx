@@ -95,7 +95,7 @@ export default function Auth() {
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Freedom</h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        {isUpdatingPassword ? 'Ustaw nowe hasło' : (isForgotPassword ? 'Resetowanie hasła' : (isSignUp ? 'Utwórz nowe konto' : 'Analiza Sprzedaży 2025'))}
+                        {isUpdatingPassword ? 'Ustaw nowe hasło' : (isForgotPassword ? 'Resetowanie hasła' : (isSignUp ? 'Utwórz nowe konto' : ''))}
                     </p>
                 </div>
 
