@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Mail, Lock, LogIn, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
 
@@ -9,7 +9,16 @@ export default function Auth() {
     const [error, setError] = useState<string | null>(null);
     const [isSignUp, setIsSignUp] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        // Detect if we came from a recovery link
+        const hash = window.location.hash;
+        if (hash && hash.includes('type=recovery')) {
+            setIsUpdatingPassword(true);
+        }
+    }, []);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,7 +27,13 @@ export default function Auth() {
         setMessage(null);
 
         try {
-            if (isForgotPassword) {
+            if (isUpdatingPassword) {
+                const { error } = await supabase.auth.updateUser({ password });
+                if (error) throw error;
+                setMessage('Hasło zostało pomyślnie zmienione! Możesz się teraz zalogować.');
+                setIsUpdatingPassword(false);
+                setIsForgotPassword(false);
+            } else if (isForgotPassword) {
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin,
                 });
@@ -80,7 +95,7 @@ export default function Auth() {
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Freedom</h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        {isForgotPassword ? 'Resetowanie hasła' : (isSignUp ? 'Utwórz nowe konto' : 'Analiza Sprzedaży 2025')}
+                        {isUpdatingPassword ? 'Ustaw nowe hasło' : (isForgotPassword ? 'Resetowanie hasła' : (isSignUp ? 'Utwórz nowe konto' : 'Analiza Sprzedaży 2025'))}
                     </p>
                 </div>
 
@@ -117,43 +132,47 @@ export default function Auth() {
                 )}
 
                 <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
-                            E-mail
-                        </label>
-                        <div style={{ position: 'relative' }}>
-                            <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem 1rem 0.75rem 3rem',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '8px',
-                                    color: 'white'
-                                }}
-                                placeholder="twoj@email.pl"
-                            />
+                    {!isUpdatingPassword && (
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+                                E-mail
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                                <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem 0.75rem 3rem',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        color: 'white'
+                                    }}
+                                    placeholder="twoj@email.pl"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {!isForgotPassword && (
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-                                    Hasło
+                                    {isUpdatingPassword ? 'Nowe Hasło' : 'Hasło'}
                                 </label>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsForgotPassword(true)}
-                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', cursor: 'pointer' }}
-                                >
-                                    Zapomniałeś?
-                                </button>
+                                {!isUpdatingPassword && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsForgotPassword(true)}
+                                        style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    >
+                                        Zapomniałeś?
+                                    </button>
+                                )}
                             </div>
                             <div style={{ position: 'relative' }}>
                                 <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -188,15 +207,20 @@ export default function Auth() {
                             fontSize: '1rem'
                         }}
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : (isForgotPassword ? 'Wyślij link' : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się'))}
+                        {loading ? <Loader2 className="animate-spin" /> : (isUpdatingPassword ? 'Zapisz nowe hasło' : (isForgotPassword ? 'Wyślij link' : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się')))}
                         {!loading && <LogIn size={18} style={{ marginLeft: '0.5rem' }} />}
                     </button>
                 </form>
 
                 <div style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {isForgotPassword ? (
+                    {(isForgotPassword || isUpdatingPassword) ? (
                         <button
-                            onClick={() => setIsForgotPassword(false)}
+                            onClick={() => {
+                                setIsForgotPassword(false);
+                                setIsUpdatingPassword(false);
+                                setError(null);
+                                setMessage(null);
+                            }}
                             style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}
                         >
                             Powrót do logowania
