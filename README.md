@@ -5,6 +5,8 @@ Nowoczesny panel analityczny do zarzadzania sprzedażą nieruchomości, zintegro
 ## 🚀 Główne Funkcje
 
 - **Analiza Sprzedaży**: Interaktywne wykresy i statystyki dotyczące oddziałów i agentów.
+- **Zabezpieczenie GitHub**: Skonfigurowano `.gitignore`, aby klucze API nie wyciekły do sieci.
+- **Odzyskiwanie Hasła**: Wdrożono pełny przepływ resetowania hasła prosto z aplikacji.
 - **Zarządzanie Agentami**: Dodawanie, usuwanie i śledzenie statusu agentów (Aktywny/Nieaktywny).
 - **Relacyjne Dane**: Wszystkie transakcje i agenci są przechowywani w czasie rzeczywistym w bazie danych Supabase.
 - **Autoryzacja (Auth)**: Profesjonalny system logowania z podziałem na role (Admin/Agent).
