@@ -1,0 +1,121 @@
+import { useMemo } from 'react'
+import { FileText, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import type { Transaction } from '../types'
+
+interface ReportsViewProps {
+    transactions: Transaction[]
+}
+
+const ReportsView = ({ transactions }: ReportsViewProps) => {
+    const monthlyStats = useMemo(() => {
+        const months: Record<number, { commission: number, volume: number, count: number }> = {}
+
+        transactions.forEach(t => {
+            if (!months[t.miesiac]) {
+                months[t.miesiac] = { commission: 0, volume: 0, count: 0 }
+            }
+            months[t.miesiac].commission += t.prowizjaNetto
+            months[t.miesiac].volume += t.wartoscNieruchomosci
+            months[t.miesiac].count += 1
+        })
+
+        return Object.entries(months).map(([m, stats]) => ({
+            month: parseInt(m),
+            ...stats
+        })).sort((a, b) => a.month - b.month)
+    }, [transactions])
+
+    const monthNames = [
+        'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+        'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
+    ]
+
+    const formatCurrency = (val: number) =>
+        val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Raporty Miesięczne</h2>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                        <Download size={18} style={{ marginRight: '0.5rem' }} />
+                        CSV
+                    </button>
+                    <button className="btn btn-primary">
+                        <FileText size={18} style={{ marginRight: '0.5rem' }} />
+                        Pobierz Pełny Raport PDF
+                    </button>
+                </div>
+            </div>
+
+            <div className="dashboard-grid">
+                {monthlyStats.slice(-4).map((m) => {
+                    const prev = monthlyStats[monthlyStats.indexOf(m) - 1]
+                    const growth = prev ? ((m.commission - prev.commission) / prev.commission) * 100 : 0
+
+                    return (
+                        <div key={m.month} className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                                <div>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{monthNames[m.month - 1]}</p>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{formatCurrency(m.commission)} zł</h3>
+                                </div>
+                                <div style={{
+                                    color: growth >= 0 ? 'var(--accent-green)' : 'var(--accent-pink)',
+                                    display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.875rem'
+                                }}>
+                                    {growth >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                    {Math.abs(growth).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Transakcje</span>
+                                    <span>{m.count}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                                    <span style={{ color: 'var(--text-muted)' }}>Śr. Prowizja</span>
+                                    <span>{formatCurrency(m.commission / m.count)} zł</span>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            <div className="glass-card" style={{ padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'left' }}>Miesiąc</th>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Liczba Transakcji</th>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Wartość Nieruchomości</th>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Suma Prowizji</th>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {monthlyStats.map(m => (
+                            <tr key={m.month} style={{ borderBottom: '1px solid var(--border)' }}>
+                                <td style={{ padding: '1.5rem 2rem', fontWeight: 600 }}>{monthNames[m.month - 1]}</td>
+                                <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>{m.count}</td>
+                                <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>{m.volume.toLocaleString()} zł</td>
+                                <td style={{ padding: '1.5rem 2rem', textAlign: 'right', fontWeight: 700, color: 'var(--accent-green)' }}>
+                                    {formatCurrency(m.commission)} zł
+                                </td>
+                                <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
+                                    <button className="btn" style={{ padding: '0.5rem', background: 'transparent', color: 'var(--primary)' }}>
+                                        <Download size={18} />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    )
+}
+
+export default ReportsView
