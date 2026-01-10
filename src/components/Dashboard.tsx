@@ -159,14 +159,15 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                         onClick={() => setActiveTab('reports')}
                     />
 
+                    <NavItem
+                        icon={<Database size={20} />}
+                        label="Baza Danych"
+                        active={activeTab === 'database'}
+                        onClick={() => setActiveTab('database')}
+                    />
+
                     {userRole === 'admin' && (
                         <>
-                            <NavItem
-                                icon={<Database size={20} />}
-                                label="Baza Danych"
-                                active={activeTab === 'database'}
-                                onClick={() => setActiveTab('database')}
-                            />
                             <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border)' }} />
                             <div onClick={() => setIsAddingData(true)}>
                                 <NavItem icon={<PlusCircle size={20} />} label="Dodaj Transakcję" />
