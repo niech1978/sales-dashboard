@@ -74,7 +74,7 @@ const BranchesView = ({ transactions }: BranchesViewProps) => {
                             <BarChart data={branchStats}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                 <XAxis dataKey="name" stroke="var(--text-muted)" axisLine={false} tickLine={false} />
-                                <YAxis stroke="var(--text-muted)" axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`} />
+                                <YAxis stroke="var(--text-muted)" axisLine={false} tickLine={false} tickFormatter={(v) => `${v.toLocaleString()} zł`} />
                                 <Tooltip
                                     contentStyle={{ background: 'var(--bg-dark)', borderColor: 'var(--border)', borderRadius: '12px' }}
                                     itemStyle={{ color: 'white' }}

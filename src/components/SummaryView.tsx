@@ -71,7 +71,7 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
                                     stroke="var(--text-muted)"
                                     axisLine={false}
                                     tickLine={false}
-                                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}k`}
+                                    tickFormatter={(v) => `${v.toLocaleString()} zł`}
                                 />
                                 <Tooltip
                                     contentStyle={{ background: 'var(--bg-dark)', borderColor: 'var(--border)', borderRadius: '12px' }}

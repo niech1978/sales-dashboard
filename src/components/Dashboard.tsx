@@ -285,13 +285,24 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                                 {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
                             </p>
                         </div>
-                        <button
-                            className="mobile-only btn"
-                            style={{ padding: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)' }}
-                            onClick={() => setIsMobileMenuOpen(true)}
-                        >
-                            <Menu size={24} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            {userRole === 'admin' && (
+                                <button
+                                    className="mobile-only btn btn-primary"
+                                    style={{ padding: '0.75rem' }}
+                                    onClick={() => setIsAddingData(true)}
+                                >
+                                    <PlusCircle size={24} />
+                                </button>
+                            )}
+                            <button
+                                className="mobile-only btn"
+                                style={{ padding: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                                onClick={() => setIsMobileMenuOpen(true)}
+                            >
+                                <Menu size={24} />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>

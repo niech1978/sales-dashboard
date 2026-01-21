@@ -33,18 +33,45 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
     const formatCurrency = (val: number) =>
         val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+    const handleDownloadCSV = () => {
+        if (monthlyStats.length === 0) return
+
+        const headers = ['Miesiąc', 'Liczba Transakcji', 'Wartość Nieruchomości', 'Suma Prowizji']
+        const rows = monthlyStats.map(m => [
+            monthNames[m.month - 1],
+            m.count,
+            m.volume,
+            m.commission
+        ])
+
+        const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        link.setAttribute('href', url)
+        link.setAttribute('download', `raport_miesieczny_${new Date().getFullYear()}.csv`)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    const handlePrintPDF = () => {
+        window.print()
+    }
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Raporty Miesięczne</h2>
                 <div style={{ display: 'flex', gap: '1rem', width: window.innerWidth <= 640 ? '100%' : 'auto' }}>
-                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}>
+                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }} onClick={handleDownloadCSV}>
                         <Download size={18} style={{ marginRight: '0.5rem' }} />
                         CSV
                     </button>
-                    <button className="btn btn-primary">
+                    <button className="btn btn-primary" onClick={handlePrintPDF}>
                         <FileText size={18} style={{ marginRight: '0.5rem' }} />
-                        Pobierz Pełny Raport PDF
+                        Drukuj / PDF
                     </button>
                 </div>
             </div>
@@ -105,7 +132,19 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                                     {formatCurrency(m.commission)} zł
                                 </td>
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-                                    <button className="btn" style={{ padding: '0.5rem', background: 'transparent', color: 'var(--primary)' }}>
+                                    <button
+                                        className="btn"
+                                        style={{ padding: '0.5rem', background: 'transparent', color: 'var(--primary)' }}
+                                        onClick={() => {
+                                            const headers = ['Data', 'Transakcje', 'Wolumen', 'Prowizja']
+                                            const csvContent = [headers, [monthNames[m.month - 1], m.count, m.volume, m.commission]].map(e => e.join(',')).join('\n')
+                                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+                                            const link = document.createElement('a')
+                                            link.href = URL.createObjectURL(blob)
+                                            link.download = `raport_${monthNames[m.month - 1].toLowerCase()}.csv`
+                                            link.click()
+                                        }}
+                                    >
                                         <Download size={18} />
                                     </button>
                                 </td>
