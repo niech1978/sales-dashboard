@@ -59,7 +59,7 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
                 />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginTop: '2.5rem' }}>
+            <div className="grid-cols-2-1" style={{ marginTop: '2.5rem' }}>
                 <div className="glass-card">
                     <h3 style={{ marginBottom: '2rem' }}>Prowizja wg Oddziałów</h3>
                     <div style={{ height: '300px', width: '100%' }}>

@@ -35,10 +35,10 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Raporty Miesięczne</h2>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', gap: '1rem', width: window.innerWidth <= 640 ? '100%' : 'auto' }}>
+                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}>
                         <Download size={18} style={{ marginRight: '0.5rem' }} />
                         CSV
                     </button>
@@ -84,7 +84,7 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                 })}
             </div>
 
-            <div className="glass-card" style={{ padding: 0 }}>
+            <div className="glass-card table-container" style={{ padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>

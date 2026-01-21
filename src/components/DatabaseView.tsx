@@ -52,7 +52,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                 </div>
             </div>
 
-            <div className="glass-card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', padding: '1.5rem 2rem' }}>
+            <div className="glass-card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', padding: '1.5rem 2rem', flexWrap: 'wrap' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
@@ -64,11 +64,11 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: window.innerWidth <= 768 ? '100%' : 'auto' }}>
                     <Filter size={18} style={{ color: 'var(--text-muted)' }} />
                     <select
                         className="input-field"
-                        style={{ width: '200px', margin: 0 }}
+                        style={{ width: window.innerWidth <= 768 ? '100%' : '200px', margin: 0 }}
                         value={selectedBranch}
                         onChange={e => setSelectedBranch(e.target.value)}
                     >
@@ -80,7 +80,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                 </div>
             </div>
 
-            <div className="glass-card" style={{ padding: 0, overflow: 'auto', maxHeight: '70vh' }}>
+            <div className="glass-card table-container" style={{ padding: 0, maxHeight: '70vh' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '1200px' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                         <tr style={{ background: 'var(--bg-dark)', borderBottom: '1px solid var(--border)' }}>

@@ -47,7 +47,7 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                 </button>
             </div>
 
-            <div className="glass-card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', padding: '1.5rem 2rem' }}>
+            <div className="glass-card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', padding: '1.5rem 2rem', flexWrap: 'wrap' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
                     <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
@@ -59,11 +59,11 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: window.innerWidth <= 768 ? '100%' : 'auto' }}>
                     <Filter size={18} style={{ color: 'var(--text-muted)' }} />
                     <select
                         className="input-field"
-                        style={{ width: '200px', margin: 0 }}
+                        style={{ width: window.innerWidth <= 768 ? '100%' : '200px', margin: 0 }}
                         value={selectedBranch}
                         onChange={e => setSelectedBranch(e.target.value)}
                     >
@@ -75,7 +75,7 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                 </div>
             </div>
 
-            <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="glass-card table-container" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>

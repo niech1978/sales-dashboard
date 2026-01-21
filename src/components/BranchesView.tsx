@@ -66,7 +66,7 @@ const BranchesView = ({ transactions }: BranchesViewProps) => {
                 ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+            <div className="grid-cols-1-5-1">
                 <div className="glass-card">
                     <h3 style={{ marginBottom: '2rem' }}>Porównanie Prowizji</h3>
                     <div style={{ height: '350px', width: '100%' }}>

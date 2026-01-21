@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User } from 'lucide-react'
+import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useData } from '../hooks/useData'
 import DataEntry from './DataEntry'
@@ -39,6 +39,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     const [isAddingAgent, setIsAddingAgent] = useState(false)
     const [user, setUser] = useState<any>(null)
     const [userRole, setUserRole] = useState<string>('agent')
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     useEffect(() => {
         const getUserProfile = async () => {
@@ -114,116 +115,149 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     }
 
     return (
-        <div style={{ display: 'flex' }}>
-            <aside className="sidebar">
-                <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        background: 'var(--primary)',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: '1rem',
-                        boxShadow: '0 8px 16px rgba(99, 102, 241, 0.4)'
-                    }}>
-                        <TrendingUp size={24} color="white" />
-                    </div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Freedom</h2>
-                </div>
-
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <NavItem
-                        icon={<LayoutDashboard size={20} />}
-                        label="Podsumowanie"
-                        active={activeTab === 'summary'}
-                        onClick={() => setActiveTab('summary')}
-                    />
-                    <NavItem
-                        icon={<Building2 size={20} />}
-                        label="Oddziały"
-                        active={activeTab === 'branches'}
-                        onClick={() => setActiveTab('branches')}
-                    />
-                    <NavItem
-                        icon={<Users size={20} />}
-                        label="Agenci"
-                        active={activeTab === 'agents'}
-                        onClick={() => setActiveTab('agents')}
-                    />
-                    <NavItem
-                        icon={<TrendingUp size={20} />}
-                        label="Raporty"
-                        active={activeTab === 'reports'}
-                        onClick={() => setActiveTab('reports')}
-                    />
-
-                    <NavItem
-                        icon={<Database size={20} />}
-                        label="Baza Danych"
-                        active={activeTab === 'database'}
-                        onClick={() => setActiveTab('database')}
-                    />
-
-                    {userRole === 'admin' && (
-                        <>
-                            <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border)' }} />
-                            <div onClick={() => setIsAddingData(true)}>
-                                <NavItem icon={<PlusCircle size={20} />} label="Dodaj Transakcję" />
-                            </div>
-                        </>
-                    )}
-                </nav>
-
-                <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
-                    {user && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.75rem',
-                            padding: '0.75rem',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            borderRadius: '12px',
-                            marginBottom: '1rem',
-                            border: '1px solid var(--border)'
-                        }}>
-                            <div style={{
-                                width: '32px',
-                                height: '32px',
-                                background: 'var(--primary)',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <User size={18} color="white" />
-                            </div>
-                            <div style={{ overflow: 'hidden' }}>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Zalogowany jako</p>
-                                <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {user.email}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <button
-                        onClick={onLogout}
-                        className="btn"
-                        style={{
-                            width: '100%',
-                            justifyContent: 'flex-start',
-                            color: 'var(--text-muted)',
-                            padding: '1rem',
-                            background: 'transparent'
-                        }}
+        <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+            <AnimatePresence>
+                {(isMobileMenuOpen || window.innerWidth > 1024) && (
+                    <motion.aside
+                        className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
+                        initial={window.innerWidth <= 1024 ? { x: -280 } : false}
+                        animate={{ x: 0 }}
+                        exit={window.innerWidth <= 1024 ? { x: -280 } : undefined}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     >
-                        <LogOut size={20} style={{ marginRight: '0.75rem' }} />
-                        Wyloguj
-                    </button>
-                </div>
-            </aside>
+                        <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '40px',
+                                    height: '40px',
+                                    background: 'var(--primary)',
+                                    borderRadius: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: '1rem',
+                                    boxShadow: '0 8px 16px rgba(99, 102, 241, 0.4)'
+                                }}>
+                                    <TrendingUp size={24} color="white" />
+                                </div>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Freedom</h2>
+                            </div>
+                            <button
+                                className="mobile-only btn"
+                                style={{ padding: '0.5rem', background: 'transparent', color: 'var(--text-muted)' }}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <NavItem
+                                icon={<LayoutDashboard size={20} />}
+                                label="Podsumowanie"
+                                active={activeTab === 'summary'}
+                                onClick={() => setActiveTab('summary')}
+                            />
+                            <NavItem
+                                icon={<Building2 size={20} />}
+                                label="Oddziały"
+                                active={activeTab === 'branches'}
+                                onClick={() => setActiveTab('branches')}
+                            />
+                            <NavItem
+                                icon={<Users size={20} />}
+                                label="Agenci"
+                                active={activeTab === 'agents'}
+                                onClick={() => setActiveTab('agents')}
+                            />
+                            <NavItem
+                                icon={<TrendingUp size={20} />}
+                                label="Raporty"
+                                active={activeTab === 'reports'}
+                                onClick={() => setActiveTab('reports')}
+                            />
+
+                            <NavItem
+                                icon={<Database size={20} />}
+                                label="Baza Danych"
+                                active={activeTab === 'database'}
+                                onClick={() => setActiveTab('database')}
+                            />
+
+                            {userRole === 'admin' && (
+                                <>
+                                    <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border)' }} />
+                                    <div onClick={() => setIsAddingData(true)}>
+                                        <NavItem icon={<PlusCircle size={20} />} label="Dodaj Transakcję" />
+                                    </div>
+                                </>
+                            )}
+                        </nav>
+
+                        <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
+                            {user && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.75rem',
+                                    padding: '0.75rem',
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    borderRadius: '12px',
+                                    marginBottom: '1rem',
+                                    border: '1px solid var(--border)'
+                                }}>
+                                    <div style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        background: 'var(--primary)',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}>
+                                        <User size={18} color="white" />
+                                    </div>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Zalogowany jako</p>
+                                        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {user.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={onLogout}
+                                className="btn"
+                                style={{
+                                    width: '100%',
+                                    justifyContent: 'flex-start',
+                                    color: 'var(--text-muted)',
+                                    padding: '1rem',
+                                    background: 'transparent'
+                                }}
+                            >
+                                <LogOut size={20} style={{ marginRight: '0.75rem' }} />
+                                Wyloguj
+                            </button>
+                        </div>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
+
+            {isMobileMenuOpen && (
+                <div
+                    className="mobile-only"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 40,
+                        backdropFilter: 'blur(4px)'
+                    }}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                />
+            )}
 
             <main className="main-content" style={{ width: '100%' }}>
                 {loading && transactionsCount === 0 && (
@@ -242,13 +276,22 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     </div>
                 )}
 
-                <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>{getTabTitle()}</h1>
-                        <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                            <Calendar size={16} style={{ marginRight: '0.5rem' }} />
-                            {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
-                        </p>
+                <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
+                        <div>
+                            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>{getTabTitle()}</h1>
+                            <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                                <Calendar size={16} style={{ marginRight: '0.5rem' }} />
+                                {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
+                            </p>
+                        </div>
+                        <button
+                            className="mobile-only btn"
+                            style={{ padding: '0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                            onClick={() => setIsMobileMenuOpen(true)}
+                        >
+                            <Menu size={24} />
+                        </button>
                     </div>
 
                     <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
