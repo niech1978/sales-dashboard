@@ -31,6 +31,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         availableYears,
         loading,
         error,
+        transactions,
         refreshData
     } = useData()
 
@@ -76,7 +77,13 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         )
 
         switch (activeTab) {
-            case 'summary': return <SummaryView transactions={allTransactions} />
+            case 'summary': return (
+                <SummaryView
+                    transactions={allTransactions}
+                    allTransactions={transactions}
+                    dateRange={dateRange}
+                />
+            )
             case 'branches': return <BranchesView transactions={allTransactions} />
             case 'agents': return (
                 <AgentsView
@@ -93,7 +100,13 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     onDelete={deleteTransaction}
                 />
             )
-            default: return <SummaryView transactions={allTransactions} />
+            default: return (
+                <SummaryView
+                    transactions={allTransactions}
+                    allTransactions={transactions}
+                    dateRange={dateRange}
+                />
+            )
         }
     }
 

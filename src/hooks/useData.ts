@@ -169,6 +169,7 @@ export function useData() {
         availableYears,
         loading,
         error,
+        transactions,
         refreshData: fetchData
     }
 }

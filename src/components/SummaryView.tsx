@@ -4,19 +4,62 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import type { Transaction } from '../types'
 
 interface SummaryViewProps {
-    transactions: Transaction[]
+    transactions: Transaction[] // filtered
+    allTransactions: Transaction[] // all from DB
+    dateRange: { startMonth: number, endMonth: number, year: number }
 }
 
-const SummaryView = ({ transactions }: SummaryViewProps) => {
+const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewProps) => {
     const stats = useMemo(() => {
+        // Current period stats
         const totalSales = transactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
         const totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
         const transactionCount = transactions.length
         const avgCommission = totalCommission / (transactionCount || 1)
         const avgCommissionPct = totalSales > 0 ? (totalCommission / totalSales) * 100 : 0
 
-        return { totalSales, totalCommission, transactionCount, avgCommission, avgCommissionPct }
-    }, [transactions])
+        // Previous period calculation
+        const duration = dateRange.endMonth - dateRange.startMonth + 1;
+        let prevStartMonth = dateRange.startMonth - duration;
+        let prevEndMonth = dateRange.endMonth - duration;
+        let prevYear = dateRange.year;
+
+        if (prevStartMonth < 1) {
+            prevYear -= 1;
+            prevStartMonth += 12;
+            prevEndMonth += 12;
+        }
+
+        const prevPeriodTransactions = allTransactions.filter(t =>
+            t.rok === prevYear &&
+            t.miesiac >= prevStartMonth &&
+            t.miesiac <= prevEndMonth
+        );
+
+        const prevSales = prevPeriodTransactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
+        const prevCommission = prevPeriodTransactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
+        const prevCount = prevPeriodTransactions.length
+
+        const getTrend = (current: number, previous: number) => {
+            if (previous === 0) return current > 0 ? `+100%` : '0%';
+            const change = ((current - previous) / previous) * 100;
+            return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
+        };
+
+        const getCountTrend = (current: number, previous: number) => {
+            const diff = current - previous;
+            return `${diff >= 0 ? '+' : ''}${diff}`;
+        };
+
+        return {
+            totalSales, totalCommission, transactionCount, avgCommission, avgCommissionPct,
+            trends: {
+                sales: getTrend(totalSales, prevSales),
+                commission: getTrend(totalCommission, prevCommission),
+                count: getCountTrend(transactionCount, prevCount)
+            }
+        }
+    }, [transactions, allTransactions, dateRange])
 
     const branchData = useMemo(() => {
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
@@ -37,20 +80,23 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
                 <StatCard
                     title="Suma Sprzedaży"
                     value={`${stats.totalSales.toLocaleString()} PLN`}
-                    trend="+12.5%"
+                    trend={stats.trends.sales}
                     icon={<Wallet size={20} color="var(--primary)" />}
+                    trendLabel="vs poprzedni okres"
                 />
                 <StatCard
                     title="Suma Prowizji"
                     value={`${formatCurrency(stats.totalCommission)} PLN`}
-                    trend="+8.2%"
+                    trend={stats.trends.commission}
                     icon={<TrendingUp size={20} color="var(--accent-pink)" />}
+                    trendLabel="vs poprzedni okres"
                 />
                 <StatCard
                     title="Liczba Transakcji"
                     value={stats.transactionCount.toString()}
-                    trend="+4"
+                    trend={stats.trends.count}
                     icon={<Briefcase size={20} color="var(--accent-blue)" />}
+                    trendLabel="vs poprzedni okres"
                 />
                 <StatCard
                     title="Średnia Prowizja"
