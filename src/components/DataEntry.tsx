@@ -12,7 +12,7 @@ interface DataEntryProps {
 const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) => {
     const [formData, setFormData] = useState<Partial<Transaction>>({
         miesiac: 1,
-        rok: 2025,
+        rok: 2026,
         strona: 'SPRZEDAŻ',
         typNieruchomosci: 'Mieszkanie',
         prowizjaNetto: 0,

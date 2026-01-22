@@ -7,7 +7,7 @@ export function useData() {
     const [dbAgents, setDbAgents] = useState<Agent[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [dateRange, setDateRange] = useState({ startMonth: 1, endMonth: 12, year: 2025 })
+    const [dateRange, setDateRange] = useState({ startMonth: 1, endMonth: 12, year: 2026 })
 
     useEffect(() => {
         fetchData()
@@ -68,7 +68,6 @@ export function useData() {
         const years = new Set<number>()
         transactions.forEach(t => years.add(t.rok))
         years.add(new Date().getFullYear())
-        years.add(new Date().getFullYear() + 1)
         return Array.from(years).sort((a, b) => b - a)
     }, [transactions])
 
