@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { FileText, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Download, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import type { Transaction } from '../types'
 
 interface ReportsViewProps {
@@ -56,22 +56,15 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
         document.body.removeChild(link)
     }
 
-    const handlePrintPDF = () => {
-        window.print()
-    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Raporty Miesięczne</h2>
                 <div style={{ display: 'flex', gap: '1rem', width: window.innerWidth <= 640 ? '100%' : 'auto' }}>
-                    <button className="btn" style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }} onClick={handleDownloadCSV}>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleDownloadCSV}>
                         <Download size={18} style={{ marginRight: '0.5rem' }} />
-                        CSV
-                    </button>
-                    <button className="btn btn-primary" onClick={handlePrintPDF}>
-                        <FileText size={18} style={{ marginRight: '0.5rem' }} />
-                        Drukuj / PDF
+                        Pobierz Raport CSV
                     </button>
                 </div>
             </div>
