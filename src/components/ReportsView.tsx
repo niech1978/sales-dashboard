@@ -40,8 +40,8 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
         const rows = monthlyStats.map(m => [
             monthNames[m.month - 1],
             m.count,
-            m.volume,
-            m.commission
+            m.volume.toFixed(2),
+            m.commission.toFixed(2)
         ])
 
         const csvContent = [headers, ...rows].map(e => e.join(',')).join('\n')
@@ -134,7 +134,7 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                                         style={{ padding: '0.5rem', background: 'transparent', color: 'var(--primary)' }}
                                         onClick={() => {
                                             const headers = ['Data', 'Transakcje', 'Wolumen', 'Prowizja']
-                                            const csvContent = [headers, [monthNames[m.month - 1], m.count, m.volume, m.commission]].map(e => e.join(',')).join('\n')
+                                            const csvContent = [headers, [monthNames[m.month - 1], m.count, m.volume.toFixed(2), m.commission.toFixed(2)]].map(e => e.join(',')).join('\n')
                                             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
                                             const link = document.createElement('a')
                                             link.href = URL.createObjectURL(blob)
