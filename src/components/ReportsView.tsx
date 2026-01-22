@@ -120,7 +120,7 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Wartość Nieruchomości</th>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Suma Prowizji</th>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Śr. Prowizja %</th>
-                            <th style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>Akcje</th>
+                            <th className="no-print" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,7 +135,7 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'right', color: 'var(--text-muted)' }}>
                                     {m.volume > 0 ? ((m.commission / m.volume) * 100).toFixed(2) : '0.00'} %
                                 </td>
-                                <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
+                                <td className="no-print" style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
                                     <button
                                         className="btn"
                                         style={{ padding: '0.5rem', background: 'transparent', color: 'var(--primary)' }}

@@ -261,3 +261,72 @@ h3 {
     margin-top: 1rem;
   }
 }
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+  }
+
+  .sidebar,
+  .no-print,
+  button,
+  .mobile-only,
+  .desktop-only,
+  .hamburger-menu,
+  nav,
+  .btn,
+  .animate-spin {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .glass-card {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid #eee !important;
+    box-shadow: none !important;
+    color: black !important;
+    break-inside: avoid;
+    margin-bottom: 20px;
+    padding: 15px !important;
+  }
+
+  .glass-card p,
+  .glass-card span {
+    color: #333 !important;
+  }
+
+  .glass-card h2,
+  .glass-card h3 {
+    color: black !important;
+    margin-bottom: 15px !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #eee !important;
+    padding: 8px !important;
+    color: black !important;
+    font-size: 9pt;
+  }
+
+  .table-container {
+    overflow: visible !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

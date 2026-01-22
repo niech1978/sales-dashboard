@@ -95,7 +95,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                             <SortableHeader label="Prowizja" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
                             <SortableHeader label="Prowizja %" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
                             <SortableHeader label="Wartość" sortKey="wartoscNieruchomosci" onSort={requestSort} textAlign="right" />
-                            <th style={{ padding: '1.25rem 1rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
+                            <th className="no-print" style={{ padding: '1.25rem 1rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -128,7 +128,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                                 <td style={{ padding: '1rem', textAlign: 'right' }}>
                                     {t.wartoscNieruchomosci.toLocaleString()} zł
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                <td className="no-print" style={{ padding: '1rem', textAlign: 'center' }}>
                                     <button
                                         onClick={() => {
                                             if (t.id && confirm('Czy na pewno chcesz usunąć tę transakcję?')) {
