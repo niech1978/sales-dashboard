@@ -156,7 +156,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr', gap: '1rem' }}>
                         <div className="form-group">
-                            <label><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
                             <input
                                 type="number"
                                 className="input-field"
@@ -171,7 +171,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                             />
                         </div>
                         <div className="form-group">
-                            <label><Repeat size={16} /> Prowizja (%)</label>
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><Repeat size={16} /> Prowizja (%)</label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -188,7 +188,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                             />
                         </div>
                         <div className="form-group">
-                            <label><DollarSign size={16} /> Prowizja Netto (zł)</label>
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Prowizja Netto (zł)</label>
                             <input
                                 type="number"
                                 className="input-field"
