@@ -93,6 +93,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                             <SortableHeader label="Nr" sortKey="transakcja" onSort={requestSort} />
                             <SortableHeader label="Adres" sortKey="adres" onSort={requestSort} />
                             <SortableHeader label="Prowizja" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
+                            <SortableHeader label="Prowizja %" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
                             <SortableHeader label="Wartość" sortKey="wartoscNieruchomosci" onSort={requestSort} textAlign="right" />
                             <th style={{ padding: '1.25rem 1rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
                         </tr>
@@ -120,6 +121,9 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                                 <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{t.adres}</td>
                                 <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: 'var(--accent-green)' }}>
                                     {formatCurrency(t.prowizjaNetto)} zł
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                                    {t.wartoscNieruchomosci > 0 ? ((t.prowizjaNetto / t.wartoscNieruchomosci) * 100).toFixed(2) : '0.00'} %
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'right' }}>
                                     {t.wartoscNieruchomosci.toLocaleString()} zł

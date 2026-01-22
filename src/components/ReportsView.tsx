@@ -119,6 +119,7 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Liczba Transakcji</th>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Wartość Nieruchomości</th>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Suma Prowizji</th>
+                            <th style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>Śr. Prowizja %</th>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>Akcje</th>
                         </tr>
                     </thead>
@@ -130,6 +131,9 @@ const ReportsView = ({ transactions }: ReportsViewProps) => {
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'right' }}>{m.volume.toLocaleString()} zł</td>
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'right', fontWeight: 700, color: 'var(--accent-green)' }}>
                                     {formatCurrency(m.commission)} zł
+                                </td>
+                                <td style={{ padding: '1.5rem 2rem', textAlign: 'right', color: 'var(--text-muted)' }}>
+                                    {m.volume > 0 ? ((m.commission / m.volume) * 100).toFixed(2) : '0.00'} %
                                 </td>
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
                                     <button

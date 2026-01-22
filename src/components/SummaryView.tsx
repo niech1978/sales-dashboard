@@ -13,8 +13,9 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
         const totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
         const transactionCount = transactions.length
         const avgCommission = totalCommission / (transactionCount || 1)
+        const avgCommissionPct = totalSales > 0 ? (totalCommission / totalSales) * 100 : 0
 
-        return { totalSales, totalCommission, transactionCount, avgCommission }
+        return { totalSales, totalCommission, transactionCount, avgCommission, avgCommissionPct }
     }, [transactions])
 
     const branchData = useMemo(() => {
@@ -54,8 +55,9 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
                 <StatCard
                     title="Średnia Prowizja"
                     value={`${formatCurrency(stats.avgCommission)} PLN`}
-                    trend="+2.1%"
+                    trend={`${stats.avgCommissionPct.toFixed(2)}%`}
                     icon={<Users size={20} color="var(--accent-green)" />}
+                    trendLabel="śr. stawka"
                 />
             </div>
 
@@ -114,7 +116,7 @@ const SummaryView = ({ transactions }: SummaryViewProps) => {
     )
 }
 
-const StatCard = ({ title, value, trend, icon }: { title: string, value: string, trend: string, icon: React.ReactNode }) => (
+const StatCard = ({ title, value, trend, icon, trendLabel = 'vs ostatni miesiąc' }: { title: string, value: string, trend: string, icon: React.ReactNode, trendLabel?: string }) => (
     <div className="glass-card" style={{ position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', opacity: 0.8 }}>
             {icon}
@@ -123,8 +125,8 @@ const StatCard = ({ title, value, trend, icon }: { title: string, value: string,
         <h3 style={{ fontSize: '1.75rem', marginBottom: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{value}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{
-                color: trend.startsWith('+') ? 'var(--accent-green)' : 'var(--accent-pink)',
-                background: trend.startsWith('+') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(236, 72, 153, 0.1)',
+                color: trend.startsWith('+') || !trend.includes('-') ? 'var(--accent-green)' : 'var(--accent-pink)',
+                background: trend.startsWith('+') || !trend.includes('-') ? 'rgba(16, 185, 129, 0.1)' : 'rgba(236, 72, 153, 0.1)',
                 padding: '0.25rem 0.5rem',
                 borderRadius: '0.5rem',
                 fontSize: '0.75rem',
@@ -132,7 +134,7 @@ const StatCard = ({ title, value, trend, icon }: { title: string, value: string,
             }}>
                 {trend}
             </span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>vs ostatni miesiąc</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{trendLabel}</span>
         </div>
     </div>
 )

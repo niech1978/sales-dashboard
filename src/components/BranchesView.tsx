@@ -61,6 +61,12 @@ const BranchesView = ({ transactions }: BranchesViewProps) => {
                                 <span style={{ color: 'var(--text-muted)' }}>Obrót</span>
                                 <span style={{ fontWeight: 700 }}>{branch.volume.toLocaleString()} zł</span>
                             </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>Śr. Stawka %</span>
+                                <span style={{ color: 'var(--accent-green)', fontWeight: 600 }}>
+                                    {branch.volume > 0 ? ((branch.commission / branch.volume) * 100).toFixed(2) : '0.00'} %
+                                </span>
+                            </div>
                         </div>
                     </div>
                 ))}

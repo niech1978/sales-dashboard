@@ -154,7 +154,39 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                value={formData.wartoscNieruchomosci}
+                                onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    const newCommission = formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0
+                                        ? (formData.prowizjaNetto / formData.wartoscNieruchomosci) * val
+                                        : formData.prowizjaNetto;
+                                    setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: newCommission });
+                                }}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label><Repeat size={16} /> Prowizja (%)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="input-field"
+                                placeholder="%"
+                                value={formData.wartoscNieruchomosci && formData.prowizjaNetto ? ((formData.prowizjaNetto / formData.wartoscNieruchomosci) * 100).toFixed(2) : ''}
+                                onChange={e => {
+                                    const pct = parseFloat(e.target.value) || 0;
+                                    if (formData.wartoscNieruchomosci) {
+                                        const amount = (formData.wartoscNieruchomosci * pct) / 100;
+                                        setFormData({ ...formData, prowizjaNetto: amount });
+                                    }
+                                }}
+                            />
+                        </div>
                         <div className="form-group">
                             <label><DollarSign size={16} /> Prowizja Netto (zł)</label>
                             <input
@@ -162,16 +194,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                                 className="input-field"
                                 required
                                 value={formData.prowizjaNetto}
-                                onChange={e => setFormData({ ...formData, prowizjaNetto: parseFloat(e.target.value) })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
-                            <input
-                                type="number"
-                                className="input-field"
-                                value={formData.wartoscNieruchomosci}
-                                onChange={e => setFormData({ ...formData, wartoscNieruchomosci: parseFloat(e.target.value) })}
+                                onChange={e => setFormData({ ...formData, prowizjaNetto: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                     </div>
