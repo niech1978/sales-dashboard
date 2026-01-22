@@ -41,12 +41,19 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
 
     return (
         <div className="modal-overlay">
-            <div className="glass-card" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', position: 'relative' }}>
-                <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', color: 'var(--text-muted)' }}>
+            <div className="glass-card" style={{
+                width: '100%',
+                maxWidth: '600px',
+                padding: window.innerWidth <= 640 ? '1.5rem' : '2.5rem',
+                position: 'relative',
+                maxHeight: '90vh',
+                overflowY: 'auto'
+            }}>
+                <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', color: 'var(--text-muted)', zIndex: 10 }}>
                     <X size={24} />
                 </button>
 
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h2 style={{ fontSize: window.innerWidth <= 640 ? '1.5rem' : '1.75rem', fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <PlusCircleIcon /> Nowa Transakcja
                 </h2>
 

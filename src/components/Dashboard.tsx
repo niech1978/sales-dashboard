@@ -187,7 +187,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                             {userRole === 'admin' && (
                                 <>
                                     <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border)' }} />
-                                    <div onClick={() => setIsAddingData(true)}>
+                                    <div onClick={(e) => { e.preventDefault(); setIsAddingData(true); }}>
                                         <NavItem icon={<PlusCircle size={20} />} label="Dodaj Transakcję" />
                                     </div>
                                 </>
@@ -261,7 +261,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
             <main className="main-content" style={{ width: '100%' }}>
                 {loading && transactionsCount === 0 && (
-                    <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 100, background: 'var(--primary)', padding: '0.5rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 1100, background: 'var(--primary)', padding: '0.5rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <RefreshCw className="animate-spin" size={16} />
                         <span>Ładowanie danych...</span>
                     </div>
@@ -400,7 +400,12 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) => (
     <motion.div
         whileHover={{ x: 5 }}
-        onClick={onClick}
+        onClick={(e) => {
+            if (onClick) {
+                e.stopPropagation();
+                onClick();
+            }
+        }}
         style={{
             display: 'flex',
             alignItems: 'center',
