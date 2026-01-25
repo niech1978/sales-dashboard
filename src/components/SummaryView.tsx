@@ -112,7 +112,13 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                     <h3 style={{ marginBottom: '2rem' }}>Prowizja wg Oddziałów</h3>
                     <div style={{ height: '300px', width: '100%' }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={branchData}>
+                            <BarChart data={branchData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                <defs>
+                                    <linearGradient id="summaryBarGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
+                                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.6} />
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                                 <XAxis dataKey="name" stroke="var(--text-muted)" axisLine={false} tickLine={false} />
                                 <YAxis
@@ -123,11 +129,27 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                                     tickFormatter={(v) => `${v.toLocaleString('pl-PL')} zł`}
                                 />
                                 <Tooltip
-                                    contentStyle={{ background: 'var(--bg-dark)', borderColor: 'var(--border)', borderRadius: '12px' }}
-                                    itemStyle={{ color: 'white' }}
+                                    contentStyle={{
+                                        background: 'rgba(15, 23, 42, 0.95)',
+                                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                                        backdropFilter: 'blur(10px)'
+                                    }}
+                                    itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
+                                    labelStyle={{ color: 'white', fontWeight: 700, marginBottom: '0.5rem' }}
                                     formatter={(value: number | undefined) => [`${formatCurrency(value)} zł`, 'Prowizja']}
+                                    cursor={{ fill: 'rgba(99, 102, 241, 0.1)', radius: 8 }}
                                 />
-                                <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={40} />
+                                <Bar
+                                    dataKey="value"
+                                    fill="url(#summaryBarGradient)"
+                                    radius={[8, 8, 0, 0]}
+                                    barSize={40}
+                                    animationDuration={800}
+                                    animationEasing="ease-out"
+                                    style={{ filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))' }}
+                                />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
