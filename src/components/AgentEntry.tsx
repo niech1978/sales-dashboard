@@ -20,11 +20,14 @@ const AgentEntry = ({ onAdd, onClose }: AgentEntryProps) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (formData.name && formData.oddzial) {
-            const newAgent: Agent = {
-                ...(formData as any),
-                id: formData.name + Date.now(), // Simple unique ID
+            const newAgent: Omit<Agent, 'id'> & { id?: string } = {
+                name: formData.name,
+                oddzial: formData.oddzial,
+                email: formData.email,
+                telefon: formData.telefon,
+                status: formData.status || 'aktywny',
             }
-            onAdd(newAgent)
+            onAdd(newAgent as Agent)
             onClose()
         }
     }

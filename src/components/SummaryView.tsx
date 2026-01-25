@@ -136,25 +136,36 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                 <div className="glass-card">
                     <h3 style={{ marginBottom: '2rem' }}>Ostatnie Transakcje</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {transactions.slice(-5).reverse().map((t, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <div style={{
-                                        width: '40px', height: '40px', borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, var(--primary), var(--accent-blue))',
-                                        marginRight: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontWeight: 700, fontSize: '0.875rem'
-                                    }}>
-                                        {t.agent.split(' ').map(n => n[0]).join('')}
+                        {transactions.length > 0 ? (
+                            transactions.slice(-5).reverse().map((t, i) => {
+                                const initials = t.agent
+                                    ? t.agent.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').toUpperCase()
+                                    : '?';
+                                return (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                            <div style={{
+                                                width: '40px', height: '40px', borderRadius: '50%',
+                                                background: 'linear-gradient(135deg, var(--primary), var(--accent-blue))',
+                                                marginRight: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontWeight: 700, fontSize: '0.875rem'
+                                            }}>
+                                                {initials}
+                                            </div>
+                                            <div>
+                                                <p style={{ fontWeight: 600 }}>{t.agent}</p>
+                                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.oddzial} • {t.typNieruchomosci}</p>
+                                            </div>
+                                        </div>
+                                        <p style={{ fontWeight: 700, color: 'var(--accent-green)' }}>{formatCurrency(t.prowizjaNetto)} zł</p>
                                     </div>
-                                    <div>
-                                        <p style={{ fontWeight: 600 }}>{t.agent}</p>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.oddzial} • {t.typNieruchomosci}</p>
-                                    </div>
-                                </div>
-                                <p style={{ fontWeight: 700, color: 'var(--accent-green)' }}>{formatCurrency(t.prowizjaNetto)} zł</p>
-                            </div>
-                        ))}
+                                );
+                            })
+                        ) : (
+                            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>
+                                Brak transakcji w wybranym okresie
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

@@ -45,9 +45,9 @@ export function useData() {
 
             setDbAgents(agentsData || [])
             setDbTransactions(transData || [])
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error fetching data:', err)
-            setError(err.message)
+            setError(err instanceof Error ? err.message : 'Wystąpił błąd pobierania danych')
         } finally {
             setLoading(false)
         }
@@ -90,7 +90,8 @@ export function useData() {
     }, [transactions, dateRange.year])
 
     const addTransaction = async (transaction: Transaction) => {
-        const { id, ...transWithoutId } = transaction
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _id, ...transWithoutId } = transaction
         const { data, error } = await supabase
             .from('transactions')
             .insert([transWithoutId])
@@ -121,7 +122,8 @@ export function useData() {
     }
 
     const addAgent = async (agent: Agent) => {
-        const { id, ...agentWithoutId } = agent
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id: _id, ...agentWithoutId } = agent
         const { data, error } = await supabase
             .from('agents')
             .insert([agentWithoutId])

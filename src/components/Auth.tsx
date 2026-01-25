@@ -57,8 +57,8 @@ export default function Auth() {
                 });
                 if (error) throw error;
             }
-        } catch (err: any) {
-            setError(err.message || 'Wystąpił błąd');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Wystąpił błąd');
         } finally {
             setLoading(false);
         }

@@ -13,7 +13,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction, direction: 'asc' | 'desc' } | null>(null)
 
     const sortedData = useMemo(() => {
-        let filtered = transactions.filter(t =>
+        const filtered = transactions.filter(t =>
             (selectedBranch === 'all' || t.oddzial === selectedBranch) &&
             (t.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 t.adres.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -21,8 +21,8 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
 
         if (sortConfig) {
             filtered.sort((a, b) => {
-                const aValue = (a[sortConfig.key] ?? '') as any
-                const bValue = (b[sortConfig.key] ?? '') as any
+                const aValue = a[sortConfig.key] ?? ''
+                const bValue = b[sortConfig.key] ?? ''
                 if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
                 if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
                 return 0
@@ -64,11 +64,11 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: window.innerWidth <= 768 ? '100%' : 'auto' }}>
+                <div className="filter-controls" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Filter size={18} style={{ color: 'var(--text-muted)' }} />
                     <select
-                        className="input-field"
-                        style={{ width: window.innerWidth <= 768 ? '100%' : '200px', margin: 0 }}
+                        className="input-field branch-select"
+                        style={{ margin: 0 }}
                         value={selectedBranch}
                         onChange={e => setSelectedBranch(e.target.value)}
                     >
@@ -93,7 +93,7 @@ const DatabaseView = ({ transactions, onDelete }: DatabaseViewProps) => {
                             <SortableHeader label="Nr" sortKey="transakcja" onSort={requestSort} />
                             <SortableHeader label="Adres" sortKey="adres" onSort={requestSort} />
                             <SortableHeader label="Prowizja" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
-                            <SortableHeader label="Prowizja %" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
+                            <th style={{ padding: '1.25rem 1rem', fontWeight: 600, textAlign: 'right' }}>Prowizja %</th>
                             <SortableHeader label="Wartość" sortKey="wartoscNieruchomosci" onSort={requestSort} textAlign="right" />
                             <th className="no-print" style={{ padding: '1.25rem 1rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
                         </tr>

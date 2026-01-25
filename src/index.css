@@ -260,6 +260,38 @@ h3 {
     padding-top: 1rem !important;
     margin-top: 1rem;
   }
+
+  .filter-controls {
+    width: 100% !important;
+  }
+
+  .branch-select {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .branch-select {
+    width: 200px;
+  }
+}
+
+.modal-card {
+  padding: 2.5rem;
+}
+
+.modal-title {
+  font-size: 1.75rem;
+}
+
+@media (max-width: 640px) {
+  .modal-card {
+    padding: 1.5rem !important;
+  }
+
+  .modal-title {
+    font-size: 1.5rem !important;
+  }
 }
 @media print {
   body {

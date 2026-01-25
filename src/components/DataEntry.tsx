@@ -30,7 +30,6 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
 
         onAdd({
             ...formData,
-            id: Math.random().toString(36).substr(2, 9),
             transakcja: '1'
         } as Transaction)
         onClose()
@@ -41,10 +40,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
 
     return (
         <div className="modal-overlay">
-            <div className="glass-card" style={{
+            <div className="glass-card modal-card" style={{
                 width: '100%',
                 maxWidth: '600px',
-                padding: window.innerWidth <= 640 ? '1.5rem' : '2.5rem',
                 position: 'relative',
                 maxHeight: '90vh',
                 overflowY: 'auto'
@@ -53,7 +51,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                     <X size={24} />
                 </button>
 
-                <h2 style={{ fontSize: window.innerWidth <= 640 ? '1.5rem' : '1.75rem', fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h2 className="modal-title" style={{ fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <PlusCircleIcon /> Nowa Transakcja
                 </h2>
 
@@ -118,7 +116,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                             <select
                                 className="input-field"
                                 value={formData.strona}
-                                onChange={e => setFormData({ ...formData, strona: e.target.value as any })}
+                                onChange={e => setFormData({ ...formData, strona: e.target.value as Transaction['strona'] })}
                             >
                                 <option value="SPRZEDAŻ">SPRZEDAŻ</option>
                                 <option value="KUPNO">KUPNO</option>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useData } from '../hooks/useData'
@@ -38,7 +39,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     const [activeTab, setActiveTab] = useState<TabType>('summary')
     const [isAddingData, setIsAddingData] = useState(false)
     const [isAddingAgent, setIsAddingAgent] = useState(false)
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<SupabaseUser | null>(null)
     const [userRole, setUserRole] = useState<string>('agent')
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
