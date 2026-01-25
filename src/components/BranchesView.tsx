@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { MapPin } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Sector } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Sector, Cell } from 'recharts'
 import type { Transaction } from '../types'
 
 interface BranchesViewProps {
@@ -198,10 +198,9 @@ const BranchesView = ({ transactions }: BranchesViewProps) => {
                                     animationEasing="ease-out"
                                 >
                                     {branchStats.map((_, index) => (
-                                        <rect
+                                        <Cell
                                             key={`bar-${index}`}
                                             fill={`url(#barGradient-${index})`}
-                                            style={{ filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))' }}
                                         />
                                     ))}
                                 </Bar>
