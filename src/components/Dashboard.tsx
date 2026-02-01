@@ -106,6 +106,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                 <PerformanceView
                     agents={allAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
                     userRole={userRole}
+                    transactions={unfilteredTransactions}
                 />
             )
             default: return (

@@ -19,6 +19,7 @@ interface PerformanceViewProps {
     year?: number
     agents?: { name: string; oddzial: string }[]
     userRole?: string
+    transactions?: import('../types').Transaction[]
 }
 
 const MONTHS_SHORT = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
@@ -193,7 +194,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
     )
 }
 
-const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent' }: PerformanceViewProps) => {
+const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent', transactions = [] }: PerformanceViewProps) => {
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
     const [isEditingTargets, setIsEditingTargets] = useState(false)
@@ -203,11 +204,12 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
         agentPerformance,
         branchPerformance,
         branchTargets,
+        branchTargetsFromDb,
         topAgents,
         monthlyTargetsData,
         loading,
         refreshData
-    } = usePerformanceData(selectedYear)
+    } = usePerformanceData(selectedYear, transactions)
 
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
 
@@ -609,7 +611,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                 {isEditingTargets && (
                     <TargetEntry
                         year={selectedYear}
-                        existingTargets={branchTargets}
+                        existingTargets={branchTargetsFromDb}
                         onSave={refreshData}
                         onClose={() => setIsEditingTargets(false)}
                     />

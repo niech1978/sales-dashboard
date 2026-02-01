@@ -17,36 +17,30 @@ const MONTHS = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
 const BRANCHES = ['Kraków', 'Warszawa', 'Olsztyn']
 
 const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProps) => {
-    const [targets, setTargets] = useState<Record<string, Record<number, { plan: number, wykonanie: number }>>>({})
+    const [targets, setTargets] = useState<Record<string, Record<number, number>>>({})
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [selectedBranch, setSelectedBranch] = useState('Warszawa')
 
     // Initialize targets from existing data
     useEffect(() => {
-        const initial: Record<string, Record<number, { plan: number, wykonanie: number }>> = {}
+        const initial: Record<string, Record<number, number>> = {}
         BRANCHES.forEach(branch => {
             initial[branch] = {}
             for (let m = 1; m <= 12; m++) {
                 const existing = existingTargets.find(t => t.oddzial === branch && t.miesiac === m)
-                initial[branch][m] = {
-                    plan: existing?.plan_kwota || 0,
-                    wykonanie: existing?.wykonanie_kwota || 0
-                }
+                initial[branch][m] = existing?.plan_kwota || 0
             }
         })
         setTargets(initial)
     }, [existingTargets])
 
-    const handleChange = (branch: string, month: number, field: 'plan' | 'wykonanie', value: string) => {
+    const handleChange = (branch: string, month: number, value: string) => {
         setTargets(prev => ({
             ...prev,
             [branch]: {
                 ...prev[branch],
-                [month]: {
-                    ...prev[branch][month],
-                    [field]: parseFloat(value) || 0
-                }
+                [month]: parseFloat(value) || 0
             }
         }))
     }
@@ -60,14 +54,14 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
 
         BRANCHES.forEach(branch => {
             for (let m = 1; m <= 12; m++) {
-                const data = targets[branch]?.[m]
-                if (data && (data.plan > 0 || data.wykonanie > 0)) {
+                const plan = targets[branch]?.[m] || 0
+                if (plan > 0) {
                     toUpsert.push({
                         oddzial: branch,
                         rok: year,
                         miesiac: m,
-                        plan_kwota: data.plan,
-                        wykonanie_kwota: data.wykonanie
+                        plan_kwota: plan,
+                        wykonanie_kwota: 0 // Wykonanie jest obliczane z transakcji
                     })
                 }
             }
@@ -92,10 +86,10 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
         onClose()
     }
 
-    const getTotalForBranch = (branch: string, field: 'plan' | 'wykonanie') => {
+    const getTotalForBranch = (branch: string) => {
         let total = 0
         for (let m = 1; m <= 12; m++) {
-            total += targets[branch]?.[m]?.[field] || 0
+            total += targets[branch]?.[m] || 0
         }
         return total
     }
@@ -108,16 +102,16 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
         <div className="modal-overlay" onClick={onClose}>
             <motion.div
                 className="glass-card modal-card"
-                style={{ maxWidth: '900px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                style={{ maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 onClick={e => e.stopPropagation()}
             >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <Target size={28} color="var(--accent-pink)" />
-                        Plany na {year}
+                        Plany sprzedażowe {year}
                     </h2>
                     <button
                         onClick={onClose}
@@ -127,6 +121,10 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                         <X size={20} />
                     </button>
                 </div>
+
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                    Wprowadź miesięczne cele prowizji dla każdego oddziału. Wykonanie jest automatycznie pobierane z transakcji.
+                </p>
 
                 {error && (
                     <div style={{
@@ -152,7 +150,8 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                                 style={{
                                     padding: '0.75rem 1.5rem',
                                     background: selectedBranch === branch ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                                    fontWeight: selectedBranch === branch ? 700 : 400
+                                    fontWeight: selectedBranch === branch ? 700 : 400,
+                                    flex: 1
                                 }}
                                 onClick={() => setSelectedBranch(branch)}
                             >
@@ -164,30 +163,19 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
 
                     {/* Summary for selected branch */}
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                         marginBottom: '1.5rem',
                         padding: '1rem',
                         background: 'rgba(99, 102, 241, 0.1)',
                         borderRadius: '12px'
                     }}>
                         <div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Suma Planu</p>
-                            <p style={{ fontWeight: 700, fontSize: '1.25rem' }}>{formatCurrency(getTotalForBranch(selectedBranch, 'plan'))}</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Suma planu rocznego</p>
+                            <p style={{ fontWeight: 700, fontSize: '1.5rem' }}>{formatCurrency(getTotalForBranch(selectedBranch))}</p>
                         </div>
-                        <div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Suma Wykonania</p>
-                            <p style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--accent-green)' }}>{formatCurrency(getTotalForBranch(selectedBranch, 'wykonanie'))}</p>
-                        </div>
-                        <div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Realizacja</p>
-                            <p style={{ fontWeight: 700, fontSize: '1.25rem', color: getTotalForBranch(selectedBranch, 'plan') > 0 && getTotalForBranch(selectedBranch, 'wykonanie') >= getTotalForBranch(selectedBranch, 'plan') ? 'var(--accent-green)' : 'var(--accent-pink)' }}>
-                                {getTotalForBranch(selectedBranch, 'plan') > 0
-                                    ? ((getTotalForBranch(selectedBranch, 'wykonanie') / getTotalForBranch(selectedBranch, 'plan')) * 100).toFixed(1) + '%'
-                                    : '0%'}
-                            </p>
-                        </div>
+                        <Target size={32} color="var(--primary)" style={{ opacity: 0.5 }} />
                     </div>
 
                     {/* Monthly inputs */}
@@ -200,22 +188,14 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                                         Miesiąc
                                     </th>
                                     <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                                        Plan (zł)
-                                    </th>
-                                    <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                                        Wykonanie (zł)
-                                    </th>
-                                    <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                                        %
+                                        Plan prowizji (zł)
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {MONTHS.map((month, i) => {
                                     const m = i + 1
-                                    const plan = targets[selectedBranch]?.[m]?.plan || 0
-                                    const wykonanie = targets[selectedBranch]?.[m]?.wykonanie || 0
-                                    const pct = plan > 0 ? (wykonanie / plan) * 100 : 0
+                                    const plan = targets[selectedBranch]?.[m] || 0
 
                                     return (
                                         <tr key={m} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -224,33 +204,13 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                                                 <input
                                                     type="number"
                                                     className="input-field"
-                                                    style={{ margin: 0, padding: '0.5rem', textAlign: 'right', width: '150px' }}
+                                                    style={{ margin: 0, padding: '0.5rem', textAlign: 'right', width: '100%' }}
                                                     value={plan || ''}
-                                                    onChange={e => handleChange(selectedBranch, m, 'plan', e.target.value)}
+                                                    onChange={e => handleChange(selectedBranch, m, e.target.value)}
                                                     placeholder="0"
                                                     step="1000"
                                                     min="0"
                                                 />
-                                            </td>
-                                            <td style={{ padding: '0.5rem 0.75rem' }}>
-                                                <input
-                                                    type="number"
-                                                    className="input-field"
-                                                    style={{ margin: 0, padding: '0.5rem', textAlign: 'right', width: '150px' }}
-                                                    value={wykonanie || ''}
-                                                    onChange={e => handleChange(selectedBranch, m, 'wykonanie', e.target.value)}
-                                                    placeholder="0"
-                                                    step="1000"
-                                                    min="0"
-                                                />
-                                            </td>
-                                            <td style={{
-                                                padding: '0.5rem 0.75rem',
-                                                textAlign: 'right',
-                                                fontWeight: 600,
-                                                color: pct >= 100 ? 'var(--accent-green)' : pct > 0 ? 'var(--accent-pink)' : 'var(--text-muted)'
-                                            }}>
-                                                {pct.toFixed(0)}%
                                             </td>
                                         </tr>
                                     )

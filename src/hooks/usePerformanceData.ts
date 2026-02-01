@@ -1,10 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import type { AgentPerformance, BranchTarget } from '../types'
+import type { AgentPerformance, BranchTarget, Transaction } from '../types'
 
-export function usePerformanceData(year: number = 2025) {
+interface BranchTargetWithWykonanie extends Omit<BranchTarget, 'wykonanie_kwota'> {
+    plan_kwota: number
+    wykonanie_kwota: number // calculated from transactions
+}
+
+export function usePerformanceData(year: number = 2026, transactions: Transaction[] = []) {
     const [agentPerformance, setAgentPerformance] = useState<AgentPerformance[]>([])
-    const [branchTargets, setBranchTargets] = useState<BranchTarget[]>([])
+    const [branchTargetsFromDb, setBranchTargetsFromDb] = useState<BranchTarget[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +33,7 @@ export function usePerformanceData(year: number = 2025) {
                 console.warn('Agent performance fetch error:', perfError)
             }
 
-            // Fetch branch targets
+            // Fetch branch targets (only plan_kwota matters now)
             const { data: targetData, error: targetError } = await supabase
                 .from('branch_targets')
                 .select('*')
@@ -40,7 +45,7 @@ export function usePerformanceData(year: number = 2025) {
             }
 
             setAgentPerformance(perfData || [])
-            setBranchTargets(targetData || [])
+            setBranchTargetsFromDb(targetData || [])
         } catch (err) {
             console.error('Error fetching performance data:', err)
             setError(err instanceof Error ? err.message : 'Błąd pobierania danych')
@@ -48,6 +53,45 @@ export function usePerformanceData(year: number = 2025) {
             setLoading(false)
         }
     }
+
+    // Filter transactions for the selected year
+    const yearTransactions = useMemo(() => {
+        return transactions.filter(t => t.rok === year)
+    }, [transactions, year])
+
+    // Calculate wykonanie from transactions per branch per month
+    const branchTargets: BranchTargetWithWykonanie[] = useMemo(() => {
+        const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+        const result: BranchTargetWithWykonanie[] = []
+
+        branches.forEach(branch => {
+            for (let month = 1; month <= 12; month++) {
+                // Get plan from DB
+                const dbTarget = branchTargetsFromDb.find(t => t.oddzial === branch && t.miesiac === month)
+                const plan = dbTarget?.plan_kwota || 0
+
+                // Calculate wykonanie from transactions
+                const monthTransactions = yearTransactions.filter(
+                    t => t.oddzial === branch && t.miesiac === month
+                )
+                const wykonanie = monthTransactions.reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+
+                // Only include if there's a plan or wykonanie
+                if (plan > 0 || wykonanie > 0) {
+                    result.push({
+                        id: dbTarget?.id,
+                        oddzial: branch,
+                        rok: year,
+                        miesiac: month,
+                        plan_kwota: plan,
+                        wykonanie_kwota: wykonanie
+                    })
+                }
+            }
+        })
+
+        return result
+    }, [branchTargetsFromDb, yearTransactions, year])
 
     // Aggregate stats by branch
     const branchPerformance = useMemo(() => {
@@ -63,7 +107,10 @@ export function usePerformanceData(year: number = 2025) {
             const totalNieruchomosci = agents.reduce((sum, a) => sum + (a.suma_nieruchomosci || 0), 0)
 
             const planTotal = targets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
-            const wykonanieTotal = targets.reduce((sum, t) => sum + (t.wykonanie_kwota || 0), 0)
+            // Wykonanie teraz z transakcji
+            const wykonanieTotal = yearTransactions
+                .filter(t => t.oddzial === branch)
+                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
 
             return {
                 oddzial: branch,
@@ -78,7 +125,7 @@ export function usePerformanceData(year: number = 2025) {
                 wykonaniePercent: planTotal > 0 ? (wykonanieTotal / planTotal) * 100 : 0
             }
         })
-    }, [agentPerformance, branchTargets])
+    }, [agentPerformance, branchTargets, yearTransactions])
 
     // Top agents across all branches
     const topAgents = useMemo(() => {
@@ -87,22 +134,27 @@ export function usePerformanceData(year: number = 2025) {
             .slice(0, 10)
     }, [agentPerformance])
 
-    // Monthly targets chart data
+    // Monthly targets chart data - wykonanie from transactions
     const monthlyTargetsData = useMemo(() => {
         const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
         return months.map((name, index) => {
-            const monthTargets = branchTargets.filter(t => t.miesiac === index + 1)
-            return {
-                name,
-                plan: monthTargets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0),
-                wykonanie: monthTargets.reduce((sum, t) => sum + (t.wykonanie_kwota || 0), 0)
-            }
+            const month = index + 1
+            const monthTargets = branchTargetsFromDb.filter(t => t.miesiac === month)
+            const plan = monthTargets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
+
+            // Wykonanie from transactions
+            const wykonanie = yearTransactions
+                .filter(t => t.miesiac === month)
+                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+
+            return { name, plan, wykonanie }
         })
-    }, [branchTargets])
+    }, [branchTargetsFromDb, yearTransactions])
 
     return {
         agentPerformance,
         branchTargets,
+        branchTargetsFromDb, // only plans from DB
         branchPerformance,
         topAgents,
         monthlyTargetsData,
