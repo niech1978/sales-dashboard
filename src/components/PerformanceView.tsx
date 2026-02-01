@@ -193,7 +193,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
     )
 }
 
-const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'agent' }: PerformanceViewProps) => {
+const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent' }: PerformanceViewProps) => {
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
     const [isEditingTargets, setIsEditingTargets] = useState(false)

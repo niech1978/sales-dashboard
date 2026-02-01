@@ -104,7 +104,6 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             )
             case 'performance': return (
                 <PerformanceView
-                    year={2025}
                     agents={allAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
                     userRole={userRole}
                 />
@@ -400,11 +399,11 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={`${activeTab}-${dateRange.startMonth}-${dateRange.endMonth}-${dateRange.year}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
+                        key={activeTab === 'performance' ? activeTab : `${activeTab}-${dateRange.startMonth}-${dateRange.endMonth}-${dateRange.year}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
                     >
                         {renderContent()}
                     </motion.div>
