@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useData } from '../hooks/useData'
 import DataEntry from './DataEntry'
 import AgentEntry from './AgentEntry'
@@ -141,12 +141,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
             <AnimatePresence>
                 {(isMobileMenuOpen || window.innerWidth > 1024) && (
-                    <motion.aside
+                    <aside
                         className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
-                        initial={window.innerWidth <= 1024 ? { x: -280 } : false}
-                        animate={{ x: 0 }}
-                        exit={window.innerWidth <= 1024 ? { x: -280 } : undefined}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     >
                         <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -270,7 +266,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                                 Wyloguj
                             </button>
                         </div>
-                    </motion.aside>
+                    </aside>
                 )}
             </AnimatePresence>
 
@@ -435,8 +431,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 }
 
 const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) => (
-    <motion.div
-        whileHover={{ x: 5 }}
+    <div
         onClick={(e) => {
             if (onClick) {
                 e.stopPropagation();
@@ -452,13 +447,13 @@ const NavItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNo
             background: active ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
             color: active ? 'var(--text-main)' : 'var(--text-muted)',
             fontWeight: active ? 600 : 400,
-            transition: 'all 0.2s ease',
+            transition: 'background 0.2s ease, color 0.2s ease',
             border: active ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid transparent'
         }}
     >
         <span style={{ marginRight: '0.75rem', color: active ? 'var(--primary)' : 'inherit' }}>{icon}</span>
         {label}
-    </motion.div>
+    </div>
 )
 
 export default Dashboard

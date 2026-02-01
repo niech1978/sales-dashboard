@@ -33,6 +33,10 @@ interface PlansTableProps {
 
 const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: PlansTableProps) => {
     const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+    const currentMonth = new Date().getMonth() + 1
+    const currentYear = new Date().getFullYear()
+    const isCurrentYear = selectedYear === currentYear
+    const maxMonth = isCurrentYear ? currentMonth : (selectedYear < currentYear ? 12 : 0)
 
     const formatCurrency = (val: number) => {
         if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M'
@@ -45,23 +49,28 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
         return target ? target[field] || 0 : 0
     }
 
-    const getTotalForBranch = (branch: string, field: 'plan_kwota' | 'wykonanie_kwota') => {
+    const getTotalForBranch = (branch: string, field: 'plan_kwota' | 'wykonanie_kwota', upToMonth?: number) => {
+        const limit = upToMonth || 12
         return branchTargets
-            .filter(t => t.oddzial === branch)
+            .filter(t => t.oddzial === branch && t.miesiac <= limit)
             .reduce((sum, t) => sum + (t[field] || 0), 0)
     }
 
-    const getGrandTotal = (field: 'plan_kwota' | 'wykonanie_kwota') => {
-        return branchTargets.reduce((sum, t) => sum + (t[field] || 0), 0)
+    const getGrandTotal = (field: 'plan_kwota' | 'wykonanie_kwota', upToMonth?: number) => {
+        const limit = upToMonth || 12
+        return branchTargets
+            .filter(t => t.miesiac <= limit)
+            .reduce((sum, t) => sum + (t[field] || 0), 0)
     }
 
-    const hasAnyPlans = branchTargets.length > 0
+    const hasAnyPlans = branchTargets.some(t => t.plan_kwota > 0)
+    const hasAnyData = branchTargets.length > 0
 
     return (
-        <div className="glass-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Target size={20} color="var(--accent-pink)" />
+        <div className="glass-card" style={{ padding: '1.5rem 2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem' }}>
+                    <Target size={22} color="var(--accent-pink)" />
                     Plany miesięczne {selectedYear}
                 </h3>
                 {userRole === 'admin' && (
@@ -76,114 +85,182 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
                 )}
             </div>
 
-            {!hasAnyPlans ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    <Target size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
-                    <p>Brak planów na {selectedYear}</p>
+            {!hasAnyData ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                    <Target size={40} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                    <p style={{ fontSize: '1rem' }}>Brak danych na {selectedYear}</p>
                     {userRole === 'admin' && (
-                        <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Kliknij "Dodaj Plany" aby wprowadzić cele</p>
+                        <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', opacity: 0.7 }}>Kliknij "Dodaj Plany" aby wprowadzić cele</p>
                     )}
                 </div>
             ) : (
-                <div className="table-container" style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ textAlign: 'left', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, position: 'sticky', left: 0, background: 'var(--bg-card)' }}>Oddział</th>
-                                {MONTHS_SHORT.map((m, i) => (
-                                    <th key={i} style={{ textAlign: 'center', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.75rem' }}>{m}</th>
-                                ))}
-                                <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Suma</th>
-                                <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>%</th>
+                            <tr>
+                                <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500, borderBottom: '2px solid var(--border)', width: '160px' }}>Oddział</th>
+                                {MONTHS_SHORT.map((m, i) => {
+                                    const month = i + 1
+                                    const isPast = month <= maxMonth
+                                    return (
+                                        <th key={i} style={{
+                                            textAlign: 'center',
+                                            padding: '1rem 0.5rem',
+                                            color: isPast ? 'var(--text-main)' : 'var(--text-muted)',
+                                            fontWeight: 600,
+                                            fontSize: '0.85rem',
+                                            borderBottom: '2px solid var(--border)',
+                                            opacity: isPast ? 1 : 0.4
+                                        }}>{m}</th>
+                                    )
+                                })}
+                                <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '2px solid var(--border)', width: '110px' }}>Suma</th>
+                                <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '2px solid var(--border)', width: '80px' }}>%</th>
                             </tr>
                         </thead>
                         <tbody>
                             {branches.map((branch, branchIndex) => {
-                                const totalPlan = getTotalForBranch(branch, 'plan_kwota')
-                                const totalWykonanie = getTotalForBranch(branch, 'wykonanie_kwota')
-                                const pct = totalPlan > 0 ? (totalWykonanie / totalPlan) * 100 : 0
+                                const totalPlanToDate = getTotalForBranch(branch, 'plan_kwota', maxMonth)
+                                const totalWykonanieToDate = getTotalForBranch(branch, 'wykonanie_kwota', maxMonth)
+                                const totalPlanYear = getTotalForBranch(branch, 'plan_kwota')
+                                const totalWykonanieYear = getTotalForBranch(branch, 'wykonanie_kwota')
+                                const pct = totalPlanToDate > 0 ? (totalWykonanieToDate / totalPlanToDate) * 100 : 0
 
                                 return (
                                     <React.Fragment key={branch}>
-                                        {/* Plan row */}
-                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                            <td style={{ padding: '0.5rem 0.75rem', position: 'sticky', left: 0, background: 'var(--bg-card)' }}>
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    padding: '0.25rem 0.5rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600,
-                                                    background: BRANCH_COLORS[branch] + '30',
-                                                    color: BRANCH_COLORS[branch]
-                                                }}>
-                                                    {branch}
-                                                </span>
-                                                <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Plan</span>
+                                        {/* Plan row - branch name + plan values */}
+                                        <tr>
+                                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '0.4rem 0.75rem',
+                                                        borderRadius: '8px',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 600,
+                                                        background: BRANCH_COLORS[branch] + '25',
+                                                        color: BRANCH_COLORS[branch]
+                                                    }}>
+                                                        {branch}
+                                                    </span>
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Plan</span>
+                                                </div>
                                             </td>
                                             {Array.from({ length: 12 }, (_, i) => {
-                                                const plan = getTargetForMonth(branch, i + 1, 'plan_kwota')
+                                                const month = i + 1
+                                                const plan = getTargetForMonth(branch, month, 'plan_kwota')
+                                                const isPast = month <= maxMonth
                                                 return (
-                                                    <td key={i} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.8rem', color: plan > 0 ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                                                    <td key={i} style={{
+                                                        textAlign: 'center',
+                                                        padding: '1rem 0.5rem',
+                                                        fontSize: '0.95rem',
+                                                        fontWeight: plan > 0 ? 600 : 400,
+                                                        color: plan > 0 ? 'var(--text-main)' : 'var(--text-muted)',
+                                                        opacity: isPast ? 1 : 0.35
+                                                    }}>
                                                         {plan > 0 ? formatCurrency(plan) : '-'}
                                                     </td>
                                                 )
                                             })}
-                                            <td style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 600 }}>
-                                                {formatCurrency(totalPlan)} zł
+                                            <td style={{ textAlign: 'right', padding: '1rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                                                {formatCurrency(totalPlanYear)} zł
                                             </td>
-                                            <td rowSpan={2} style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 700, fontSize: '1rem', color: pct >= 100 ? 'var(--accent-green)' : pct > 0 ? 'var(--accent-pink)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
+                                            <td rowSpan={2} style={{
+                                                textAlign: 'right',
+                                                padding: '1rem',
+                                                fontWeight: 700,
+                                                fontSize: '1.25rem',
+                                                color: pct >= 100 ? 'var(--accent-green)' : pct > 0 ? 'var(--accent-pink)' : 'var(--text-muted)',
+                                                verticalAlign: 'middle'
+                                            }}>
                                                 {pct.toFixed(0)}%
                                             </td>
                                         </tr>
                                         {/* Wykonanie row */}
-                                        <tr style={{ borderBottom: branchIndex < branches.length - 1 ? '2px solid var(--border)' : '1px solid var(--border)' }}>
-                                            <td style={{ padding: '0.5rem 0.75rem', position: 'sticky', left: 0, background: 'var(--bg-card)' }}>
-                                                <span style={{ marginLeft: '2.5rem', fontSize: '0.75rem', color: 'var(--accent-green)' }}>Wykonanie</span>
+                                        <tr style={{ borderBottom: branchIndex < branches.length - 1 ? '2px solid var(--border)' : 'none' }}>
+                                            <td style={{ padding: '0.75rem 1rem 1.25rem' }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', marginLeft: '0.5rem' }}>Wykonanie</span>
                                             </td>
                                             {Array.from({ length: 12 }, (_, i) => {
-                                                const wykonanie = getTargetForMonth(branch, i + 1, 'wykonanie_kwota')
-                                                const plan = getTargetForMonth(branch, i + 1, 'plan_kwota')
-                                                const monthPct = plan > 0 ? (wykonanie / plan) * 100 : 0
+                                                const month = i + 1
+                                                const wykonanie = getTargetForMonth(branch, month, 'wykonanie_kwota')
+                                                const plan = getTargetForMonth(branch, month, 'plan_kwota')
+                                                const monthPct = plan > 0 ? (wykonanie / plan) * 100 : (wykonanie > 0 ? 100 : 0)
+                                                const isPast = month <= maxMonth
                                                 return (
                                                     <td key={i} style={{
                                                         textAlign: 'center',
-                                                        padding: '0.5rem',
-                                                        fontSize: '0.8rem',
-                                                        color: wykonanie > 0 ? (monthPct >= 100 ? 'var(--accent-green)' : 'var(--accent-pink)') : 'var(--text-muted)'
+                                                        padding: '0.75rem 0.5rem 1.25rem',
+                                                        opacity: isPast ? 1 : 0.35
                                                     }}>
-                                                        {wykonanie > 0 ? formatCurrency(wykonanie) : '-'}
+                                                        <div style={{
+                                                            fontSize: '0.95rem',
+                                                            color: wykonanie > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                                                            fontWeight: wykonanie > 0 ? 600 : 400
+                                                        }}>
+                                                            {wykonanie > 0 ? formatCurrency(wykonanie) : '-'}
+                                                        </div>
+                                                        {plan > 0 && isPast && (
+                                                            <div style={{
+                                                                fontSize: '0.7rem',
+                                                                color: monthPct >= 100 ? 'var(--accent-green)' : 'var(--accent-pink)',
+                                                                marginTop: '0.3rem',
+                                                                fontWeight: 600
+                                                            }}>
+                                                                {monthPct.toFixed(0)}%
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 )
                                             })}
-                                            <td style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--accent-green)' }}>
-                                                {formatCurrency(totalWykonanie)} zł
+                                            <td style={{ textAlign: 'right', padding: '0.75rem 1rem 1.25rem', fontWeight: 600, fontSize: '0.95rem', color: 'var(--accent-green)' }}>
+                                                {formatCurrency(totalWykonanieYear)} zł
                                             </td>
                                         </tr>
                                     </React.Fragment>
                                 )
                             })}
                             {/* Grand total row */}
-                            <tr style={{ background: 'rgba(99, 102, 241, 0.1)' }}>
-                                <td style={{ padding: '0.75rem', fontWeight: 700, position: 'sticky', left: 0, background: 'rgba(99, 102, 241, 0.1)' }}>
+                            <tr style={{ background: 'rgba(99, 102, 241, 0.1)', borderTop: '2px solid var(--border)' }}>
+                                <td style={{ padding: '1.25rem 1rem', fontWeight: 700, fontSize: '1rem' }}>
                                     RAZEM
                                 </td>
                                 {Array.from({ length: 12 }, (_, i) => {
-                                    const totalPlan = branches.reduce((sum, b) => sum + getTargetForMonth(b, i + 1, 'plan_kwota'), 0)
-                                    const totalWyk = branches.reduce((sum, b) => sum + getTargetForMonth(b, i + 1, 'wykonanie_kwota'), 0)
+                                    const month = i + 1
+                                    const totalPlan = branches.reduce((sum, b) => sum + getTargetForMonth(b, month, 'plan_kwota'), 0)
+                                    const totalWyk = branches.reduce((sum, b) => sum + getTargetForMonth(b, month, 'wykonanie_kwota'), 0)
+                                    const monthPct = totalPlan > 0 ? (totalWyk / totalPlan) * 100 : 0
+                                    const isPast = month <= maxMonth
                                     return (
-                                        <td key={i} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.75rem' }}>
-                                            <div style={{ fontWeight: 600 }}>{totalPlan > 0 ? formatCurrency(totalPlan) : '-'}</div>
-                                            <div style={{ color: 'var(--accent-green)', fontSize: '0.7rem' }}>{totalWyk > 0 ? formatCurrency(totalWyk) : '-'}</div>
+                                        <td key={i} style={{ textAlign: 'center', padding: '1.25rem 0.5rem', opacity: isPast ? 1 : 0.35 }}>
+                                            <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{totalPlan > 0 ? formatCurrency(totalPlan) : '-'}</div>
+                                            <div style={{ color: 'var(--accent-green)', fontSize: '0.85rem', fontWeight: 600 }}>{totalWyk > 0 ? formatCurrency(totalWyk) : '-'}</div>
+                                            {totalPlan > 0 && isPast && (
+                                                <div style={{
+                                                    fontSize: '0.65rem',
+                                                    color: monthPct >= 100 ? 'var(--accent-green)' : 'var(--accent-pink)',
+                                                    marginTop: '0.25rem',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {monthPct.toFixed(0)}%
+                                                </div>
+                                            )}
                                         </td>
                                     )
                                 })}
-                                <td style={{ textAlign: 'right', padding: '0.75rem' }}>
-                                    <div style={{ fontWeight: 700 }}>{formatCurrency(getGrandTotal('plan_kwota'))} zł</div>
-                                    <div style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{formatCurrency(getGrandTotal('wykonanie_kwota'))} zł</div>
+                                <td style={{ textAlign: 'right', padding: '1.25rem 1rem' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{formatCurrency(getGrandTotal('plan_kwota'))} zł</div>
+                                    <div style={{ color: 'var(--accent-green)', fontWeight: 600, fontSize: '0.95rem' }}>{formatCurrency(getGrandTotal('wykonanie_kwota'))} zł</div>
                                 </td>
-                                <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 700, fontSize: '1.1rem', color: getGrandTotal('plan_kwota') > 0 && getGrandTotal('wykonanie_kwota') >= getGrandTotal('plan_kwota') ? 'var(--accent-green)' : 'var(--accent-pink)' }}>
-                                    {getGrandTotal('plan_kwota') > 0 ? ((getGrandTotal('wykonanie_kwota') / getGrandTotal('plan_kwota')) * 100).toFixed(0) : 0}%
+                                <td style={{
+                                    textAlign: 'right',
+                                    padding: '1.25rem 1rem',
+                                    fontWeight: 700,
+                                    fontSize: '1.4rem',
+                                    color: getGrandTotal('plan_kwota', maxMonth) > 0 && getGrandTotal('wykonanie_kwota', maxMonth) >= getGrandTotal('plan_kwota', maxMonth) ? 'var(--accent-green)' : 'var(--accent-pink)'
+                                }}>
+                                    {getGrandTotal('plan_kwota', maxMonth) > 0 ? ((getGrandTotal('wykonanie_kwota', maxMonth) / getGrandTotal('plan_kwota', maxMonth)) * 100).toFixed(0) : 0}%
                                 </td>
                             </tr>
                         </tbody>
