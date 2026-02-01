@@ -102,7 +102,13 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     onDelete={deleteTransaction}
                 />
             )
-            case 'performance': return <PerformanceView year={2025} />
+            case 'performance': return (
+                <PerformanceView
+                    year={2025}
+                    agents={allAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
+                    userRole={userRole}
+                />
+            )
             default: return (
                 <SummaryView
                     transactions={allTransactions}
