@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useData } from '../hooks/useData'
 import DataEntry from './DataEntry'
@@ -11,12 +11,13 @@ import BranchesView from './BranchesView'
 import AgentsView from './AgentsView'
 import ReportsView from './ReportsView'
 import DatabaseView from './DatabaseView'
+import PerformanceView from './PerformanceView'
 
 interface DashboardProps {
     onLogout: () => void
 }
 
-type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database'
+type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database' | 'performance'
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
     const {
@@ -101,6 +102,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     onDelete={deleteTransaction}
                 />
             )
+            case 'performance': return <PerformanceView year={dateRange.year} />
             default: return (
                 <SummaryView
                     transactions={allTransactions}
@@ -118,6 +120,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             case 'agents': return 'Baza Agentów'
             case 'reports': return 'Raporty i Wyniki'
             case 'database': return 'Pełna Baza Danych'
+            case 'performance': return 'Wydajność Agentów'
             default: return 'Podsumowanie'
         }
     }
@@ -189,6 +192,12 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                                 label="Raporty"
                                 active={activeTab === 'reports'}
                                 onClick={() => setActiveTab('reports')}
+                            />
+                            <NavItem
+                                icon={<Trophy size={20} />}
+                                label="Wydajność"
+                                active={activeTab === 'performance'}
+                                onClick={() => setActiveTab('performance')}
                             />
 
                             <NavItem

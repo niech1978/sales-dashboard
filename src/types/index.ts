@@ -36,3 +36,29 @@ export interface Agent {
     telefon?: string;
     status: 'aktywny' | 'nieaktywny';
 }
+
+export interface AgentPerformance {
+    id?: string;
+    agent_name: string;
+    oddzial: string;
+    rok: number;
+    miesiac: number | null;
+    prowizja_netto_kredyt: number;
+    spotkania_pozyskowe: number;
+    nowe_umowy: number;
+    prezentacje: number;
+    mieszkania: number;
+    domy: number;
+    dzialki: number;
+    inne: number;
+    suma_nieruchomosci: number;
+}
+
+export interface BranchTarget {
+    id?: string;
+    oddzial: string;
+    rok: number;
+    miesiac: number;
+    plan_kwota: number;
+    wykonanie_kwota: number;
+}
