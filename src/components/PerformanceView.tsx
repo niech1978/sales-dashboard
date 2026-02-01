@@ -39,8 +39,14 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
     const maxMonth = isCurrentYear ? currentMonth : (selectedYear < currentYear ? 12 : 0)
 
     const formatCurrency = (val: number) => {
-        if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M'
-        if (val >= 1000) return (val / 1000).toFixed(0) + 'k'
+        if (val >= 1000000) {
+            const m = val / 1000000
+            return (m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)) + 'M'
+        }
+        if (val >= 1000) {
+            const k = val / 1000
+            return (k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)) + 'k'
+        }
         return val.toFixed(0)
     }
 
