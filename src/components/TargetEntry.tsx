@@ -204,11 +204,11 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                                                 <input
                                                     type="number"
                                                     className="input-field"
-                                                    style={{ margin: 0, padding: '0.5rem', textAlign: 'right', width: '100%' }}
+                                                    style={{ margin: 0, padding: '0.5rem 1rem', textAlign: 'right', width: '100%' }}
                                                     value={plan || ''}
                                                     onChange={e => handleChange(selectedBranch, m, e.target.value)}
                                                     placeholder="0"
-                                                    step="1000"
+                                                    step="500"
                                                     min="0"
                                                 />
                                             </td>
