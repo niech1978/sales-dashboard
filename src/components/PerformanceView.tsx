@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
-import { Trophy, Target, Users, TrendingUp, Calendar, Building2, PlusCircle } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { Trophy, Target, Users, TrendingUp, Calendar, Building2, PlusCircle, Trash2, Edit3 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts'
 import { AnimatePresence } from 'framer-motion'
 import { usePerformanceData } from '../hooks/usePerformanceData'
+import { supabase } from '../lib/supabaseClient'
 import PerformanceEntry from './PerformanceEntry'
+import TargetEntry from './TargetEntry'
 import type { AgentPerformance } from '../types'
 
 const COLORS = ['#6366f1', '#ec4899', '#3b82f6']
@@ -19,13 +21,188 @@ interface PerformanceViewProps {
     userRole?: string
 }
 
+const MONTHS_SHORT = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
+
+interface PlansTableProps {
+    branchTargets: import('../types').BranchTarget[]
+    selectedYear: number
+    userRole: string
+    onEditPlans: () => void
+}
+
+const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: PlansTableProps) => {
+    const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+
+    const formatCurrency = (val: number) => {
+        if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M'
+        if (val >= 1000) return (val / 1000).toFixed(0) + 'k'
+        return val.toFixed(0)
+    }
+
+    const getTargetForMonth = (branch: string, month: number, field: 'plan_kwota' | 'wykonanie_kwota') => {
+        const target = branchTargets.find(t => t.oddzial === branch && t.miesiac === month)
+        return target ? target[field] || 0 : 0
+    }
+
+    const getTotalForBranch = (branch: string, field: 'plan_kwota' | 'wykonanie_kwota') => {
+        return branchTargets
+            .filter(t => t.oddzial === branch)
+            .reduce((sum, t) => sum + (t[field] || 0), 0)
+    }
+
+    const getGrandTotal = (field: 'plan_kwota' | 'wykonanie_kwota') => {
+        return branchTargets.reduce((sum, t) => sum + (t[field] || 0), 0)
+    }
+
+    const hasAnyPlans = branchTargets.length > 0
+
+    return (
+        <div className="glass-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Target size={20} color="var(--accent-pink)" />
+                    Plany miesięczne {selectedYear}
+                </h3>
+                {userRole === 'admin' && (
+                    <button
+                        className="btn"
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(236, 72, 153, 0.15)', border: '1px solid var(--accent-pink)' }}
+                        onClick={onEditPlans}
+                    >
+                        <Edit3 size={16} />
+                        {hasAnyPlans ? 'Edytuj Plany' : 'Dodaj Plany'}
+                    </button>
+                )}
+            </div>
+
+            {!hasAnyPlans ? (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    <Target size={32} style={{ marginBottom: '0.5rem', opacity: 0.5 }} />
+                    <p>Brak planów na {selectedYear}</p>
+                    {userRole === 'admin' && (
+                        <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Kliknij "Dodaj Plany" aby wprowadzić cele</p>
+                    )}
+                </div>
+            ) : (
+                <div className="table-container" style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ textAlign: 'left', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, position: 'sticky', left: 0, background: 'var(--bg-card)' }}>Oddział</th>
+                                {MONTHS_SHORT.map((m, i) => (
+                                    <th key={i} style={{ textAlign: 'center', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.75rem' }}>{m}</th>
+                                ))}
+                                <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Suma</th>
+                                <th style={{ textAlign: 'right', padding: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {branches.map((branch, branchIndex) => {
+                                const totalPlan = getTotalForBranch(branch, 'plan_kwota')
+                                const totalWykonanie = getTotalForBranch(branch, 'wykonanie_kwota')
+                                const pct = totalPlan > 0 ? (totalWykonanie / totalPlan) * 100 : 0
+
+                                return (
+                                    <React.Fragment key={branch}>
+                                        {/* Plan row */}
+                                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                            <td style={{ padding: '0.5rem 0.75rem', position: 'sticky', left: 0, background: 'var(--bg-card)' }}>
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    background: BRANCH_COLORS[branch] + '30',
+                                                    color: BRANCH_COLORS[branch]
+                                                }}>
+                                                    {branch}
+                                                </span>
+                                                <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Plan</span>
+                                            </td>
+                                            {Array.from({ length: 12 }, (_, i) => {
+                                                const plan = getTargetForMonth(branch, i + 1, 'plan_kwota')
+                                                return (
+                                                    <td key={i} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.8rem', color: plan > 0 ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                                                        {plan > 0 ? formatCurrency(plan) : '-'}
+                                                    </td>
+                                                )
+                                            })}
+                                            <td style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 600 }}>
+                                                {formatCurrency(totalPlan)} zł
+                                            </td>
+                                            <td rowSpan={2} style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 700, fontSize: '1rem', color: pct >= 100 ? 'var(--accent-green)' : pct > 0 ? 'var(--accent-pink)' : 'var(--text-muted)', verticalAlign: 'middle' }}>
+                                                {pct.toFixed(0)}%
+                                            </td>
+                                        </tr>
+                                        {/* Wykonanie row */}
+                                        <tr style={{ borderBottom: branchIndex < branches.length - 1 ? '2px solid var(--border)' : '1px solid var(--border)' }}>
+                                            <td style={{ padding: '0.5rem 0.75rem', position: 'sticky', left: 0, background: 'var(--bg-card)' }}>
+                                                <span style={{ marginLeft: '2.5rem', fontSize: '0.75rem', color: 'var(--accent-green)' }}>Wykonanie</span>
+                                            </td>
+                                            {Array.from({ length: 12 }, (_, i) => {
+                                                const wykonanie = getTargetForMonth(branch, i + 1, 'wykonanie_kwota')
+                                                const plan = getTargetForMonth(branch, i + 1, 'plan_kwota')
+                                                const monthPct = plan > 0 ? (wykonanie / plan) * 100 : 0
+                                                return (
+                                                    <td key={i} style={{
+                                                        textAlign: 'center',
+                                                        padding: '0.5rem',
+                                                        fontSize: '0.8rem',
+                                                        color: wykonanie > 0 ? (monthPct >= 100 ? 'var(--accent-green)' : 'var(--accent-pink)') : 'var(--text-muted)'
+                                                    }}>
+                                                        {wykonanie > 0 ? formatCurrency(wykonanie) : '-'}
+                                                    </td>
+                                                )
+                                            })}
+                                            <td style={{ textAlign: 'right', padding: '0.5rem 0.75rem', fontWeight: 600, color: 'var(--accent-green)' }}>
+                                                {formatCurrency(totalWykonanie)} zł
+                                            </td>
+                                        </tr>
+                                    </React.Fragment>
+                                )
+                            })}
+                            {/* Grand total row */}
+                            <tr style={{ background: 'rgba(99, 102, 241, 0.1)' }}>
+                                <td style={{ padding: '0.75rem', fontWeight: 700, position: 'sticky', left: 0, background: 'rgba(99, 102, 241, 0.1)' }}>
+                                    RAZEM
+                                </td>
+                                {Array.from({ length: 12 }, (_, i) => {
+                                    const totalPlan = branches.reduce((sum, b) => sum + getTargetForMonth(b, i + 1, 'plan_kwota'), 0)
+                                    const totalWyk = branches.reduce((sum, b) => sum + getTargetForMonth(b, i + 1, 'wykonanie_kwota'), 0)
+                                    return (
+                                        <td key={i} style={{ textAlign: 'center', padding: '0.5rem', fontSize: '0.75rem' }}>
+                                            <div style={{ fontWeight: 600 }}>{totalPlan > 0 ? formatCurrency(totalPlan) : '-'}</div>
+                                            <div style={{ color: 'var(--accent-green)', fontSize: '0.7rem' }}>{totalWyk > 0 ? formatCurrency(totalWyk) : '-'}</div>
+                                        </td>
+                                    )
+                                })}
+                                <td style={{ textAlign: 'right', padding: '0.75rem' }}>
+                                    <div style={{ fontWeight: 700 }}>{formatCurrency(getGrandTotal('plan_kwota'))} zł</div>
+                                    <div style={{ color: 'var(--accent-green)', fontWeight: 600 }}>{formatCurrency(getGrandTotal('wykonanie_kwota'))} zł</div>
+                                </td>
+                                <td style={{ textAlign: 'right', padding: '0.75rem', fontWeight: 700, fontSize: '1.1rem', color: getGrandTotal('plan_kwota') > 0 && getGrandTotal('wykonanie_kwota') >= getGrandTotal('plan_kwota') ? 'var(--accent-green)' : 'var(--accent-pink)' }}>
+                                    {getGrandTotal('plan_kwota') > 0 ? ((getGrandTotal('wykonanie_kwota') / getGrandTotal('plan_kwota')) * 100).toFixed(0) : 0}%
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    )
+}
+
 const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'agent' }: PerformanceViewProps) => {
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
+    const [isEditingTargets, setIsEditingTargets] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
 
     const {
         agentPerformance,
         branchPerformance,
+        branchTargets,
         topAgents,
         monthlyTargetsData,
         loading,
@@ -48,6 +225,24 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
 
     const handleAddPerformance = (_data: AgentPerformance) => {
         refreshData()
+    }
+
+    const handleDeletePerformance = async (id: string) => {
+        if (!confirm('Czy na pewno chcesz usunąć ten wpis?')) return
+
+        setDeletingId(id)
+        const { error } = await supabase
+            .from('agent_performance')
+            .delete()
+            .eq('id', id)
+
+        if (error) {
+            console.error('Delete error:', error)
+            alert('Błąd usuwania: ' + error.message)
+        } else {
+            refreshData()
+        }
+        setDeletingId(null)
     }
 
     // Get unique agents from performance data for the form
@@ -103,12 +298,20 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
                 )}
             </div>
 
+            {/* Plans Table - Always visible */}
+            <PlansTable
+                branchTargets={branchTargets}
+                selectedYear={selectedYear}
+                userRole={userRole}
+                onEditPlans={() => setIsEditingTargets(true)}
+            />
+
             {agentPerformance.length === 0 ? (
                 <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
-                    <Target size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-                    <h3 style={{ marginBottom: '0.5rem' }}>Brak danych wydajności za {selectedYear}</h3>
+                    <Users size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+                    <h3 style={{ marginBottom: '0.5rem' }}>Brak danych wydajności agentów za {selectedYear}</h3>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                        Nie ma jeszcze danych dla tego roku.
+                        Nie ma jeszcze danych wydajności agentów dla tego roku.
                     </p>
                     {userRole === 'admin' && (
                         <button
@@ -116,7 +319,7 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
                             onClick={() => setIsAddingPerformance(true)}
                         >
                             <PlusCircle size={18} style={{ marginRight: '0.5rem' }} />
-                            Dodaj pierwsze dane
+                            Dodaj wydajność agenta
                         </button>
                     )}
                 </div>
@@ -323,6 +526,9 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Umowy</th>
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Prezentacje</th>
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Nieruchomości</th>
+                                        {userRole === 'admin' && (
+                                            <th style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500, width: '60px' }}>Akcje</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -359,6 +565,24 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.nowe_umowy}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.prezentacje}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>{agent.suma_nieruchomosci}</td>
+                                            {userRole === 'admin' && agent.id && (
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <button
+                                                        onClick={() => handleDeletePerformance(agent.id!)}
+                                                        disabled={deletingId === agent.id}
+                                                        className="btn"
+                                                        style={{
+                                                            padding: '0.4rem',
+                                                            background: 'rgba(236, 72, 153, 0.15)',
+                                                            border: 'none',
+                                                            opacity: deletingId === agent.id ? 0.5 : 1
+                                                        }}
+                                                        title="Usuń wpis"
+                                                    >
+                                                        <Trash2 size={16} color="var(--accent-pink)" />
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -376,6 +600,18 @@ const PerformanceView = ({ year: initialYear = 2025, agents = [], userRole = 'ag
                         year={selectedYear}
                         onAdd={handleAddPerformance}
                         onClose={() => setIsAddingPerformance(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Target Entry Modal */}
+            <AnimatePresence>
+                {isEditingTargets && (
+                    <TargetEntry
+                        year={selectedYear}
+                        existingTargets={branchTargets}
+                        onSave={refreshData}
+                        onClose={() => setIsEditingTargets(false)}
                     />
                 )}
             </AnimatePresence>

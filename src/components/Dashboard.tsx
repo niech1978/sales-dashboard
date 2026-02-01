@@ -309,13 +309,15 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
                         <div>
                             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>{getTabTitle()}</h1>
-                            <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
-                                <Calendar size={16} style={{ marginRight: '0.5rem' }} />
-                                {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
-                            </p>
+                            {activeTab !== 'performance' && (
+                                <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                                    <Calendar size={16} style={{ marginRight: '0.5rem' }} />
+                                    {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
+                                </p>
+                            )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            {userRole === 'admin' && (
+                            {userRole === 'admin' && activeTab !== 'performance' && (
                                 <button
                                     className="mobile-only btn btn-primary"
                                     style={{ padding: '0.75rem' }}
@@ -334,64 +336,66 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                         </div>
                     </div>
 
-                    <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
-                        <Filter size={18} color="var(--primary)" />
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            <select
-                                className="input-field"
-                                style={{ margin: 0, padding: '0.5rem', width: '100px', fontWeight: 700, borderColor: 'var(--primary)' }}
-                                value={dateRange.year}
-                                onChange={e => setDateRange({ ...dateRange, year: parseInt(e.target.value) })}
-                            >
-                                {availableYears.map(year => <option key={year} value={year}>{year}</option>)}
-                            </select>
-                            <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 0.5rem' }} />
-                            <select
-                                className="input-field"
-                                style={{ margin: 0, padding: '0.5rem', width: '130px' }}
-                                value={dateRange.startMonth}
-                                onChange={e => setDateRange({ ...dateRange, startMonth: parseInt(e.target.value) })}
-                            >
-                                {monthNames.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                            </select>
-                            <span style={{ color: 'var(--text-muted)' }}>do</span>
-                            <select
-                                className="input-field"
-                                style={{ margin: 0, padding: '0.5rem', width: '130px' }}
-                                value={dateRange.endMonth}
-                                onChange={e => setDateRange({ ...dateRange, endMonth: parseInt(e.target.value) })}
-                            >
-                                {monthNames.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                            </select>
-                        </div>
-                        <div style={{ borderLeft: '1px solid var(--border)', paddingLeft: '1rem', display: 'flex', gap: '0.5rem' }}>
-                            {[1, 2, 3, 4].map(q => (
+                    {activeTab !== 'performance' && (
+                        <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                            <Filter size={18} color="var(--primary)" />
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <select
+                                    className="input-field"
+                                    style={{ margin: 0, padding: '0.5rem', width: '100px', fontWeight: 700, borderColor: 'var(--primary)' }}
+                                    value={dateRange.year}
+                                    onChange={e => setDateRange({ ...dateRange, year: parseInt(e.target.value) })}
+                                >
+                                    {availableYears.map(year => <option key={year} value={year}>{year}</option>)}
+                                </select>
+                                <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 0.5rem' }} />
+                                <select
+                                    className="input-field"
+                                    style={{ margin: 0, padding: '0.5rem', width: '130px' }}
+                                    value={dateRange.startMonth}
+                                    onChange={e => setDateRange({ ...dateRange, startMonth: parseInt(e.target.value) })}
+                                >
+                                    {monthNames.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                                </select>
+                                <span style={{ color: 'var(--text-muted)' }}>do</span>
+                                <select
+                                    className="input-field"
+                                    style={{ margin: 0, padding: '0.5rem', width: '130px' }}
+                                    value={dateRange.endMonth}
+                                    onChange={e => setDateRange({ ...dateRange, endMonth: parseInt(e.target.value) })}
+                                >
+                                    {monthNames.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ borderLeft: '1px solid var(--border)', paddingLeft: '1rem', display: 'flex', gap: '0.5rem' }}>
+                                {[1, 2, 3, 4].map(q => (
+                                    <button
+                                        key={q}
+                                        className="btn"
+                                        style={{
+                                            padding: '0.4rem 0.8rem',
+                                            fontSize: '0.75rem',
+                                            background: (dateRange.startMonth === (q - 1) * 3 + 1 && dateRange.endMonth === q * 3) ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
+                                        }}
+                                        onClick={() => setQuarter(q)}
+                                    >
+                                        Q{q}
+                                    </button>
+                                ))}
                                 <button
-                                    key={q}
                                     className="btn"
                                     style={{
                                         padding: '0.4rem 0.8rem',
                                         fontSize: '0.75rem',
-                                        background: (dateRange.startMonth === (q - 1) * 3 + 1 && dateRange.endMonth === q * 3) ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
+                                        background: (dateRange.startMonth === 1 && dateRange.endMonth === 12) ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
                                     }}
-                                    onClick={() => setQuarter(q)}
+                                    onClick={() => setDateRange({ ...dateRange, startMonth: 1, endMonth: 12, year: dateRange.year })}
                                 >
-                                    Q{q}
+                                    Cały Rok
                                 </button>
-                            ))}
-                            <button
-                                className="btn"
-                                style={{
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.75rem',
-                                    background: (dateRange.startMonth === 1 && dateRange.endMonth === 12) ? 'var(--primary)' : 'rgba(255,255,255,0.05)'
-                                }}
-                                onClick={() => setDateRange({ ...dateRange, startMonth: 1, endMonth: 12, year: dateRange.year })}
-                            >
-                                Cały Rok
-                            </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </header>
 
                 <AnimatePresence mode="wait">
