@@ -102,7 +102,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     onDelete={deleteTransaction}
                 />
             )
-            case 'performance': return <PerformanceView year={dateRange.year} />
+            case 'performance': return <PerformanceView year={2025} />
             default: return (
                 <SummaryView
                     transactions={allTransactions}
