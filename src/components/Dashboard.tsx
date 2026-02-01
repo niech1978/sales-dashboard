@@ -397,17 +397,21 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     )}
                 </header>
 
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={activeTab === 'performance' ? activeTab : `${activeTab}-${dateRange.startMonth}-${dateRange.endMonth}-${dateRange.year}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                    >
-                        {renderContent()}
-                    </motion.div>
-                </AnimatePresence>
+                {activeTab === 'performance' ? (
+                    renderContent()
+                ) : (
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={`${activeTab}-${dateRange.startMonth}-${dateRange.endMonth}-${dateRange.year}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                        >
+                            {renderContent()}
+                        </motion.div>
+                    </AnimatePresence>
+                )}
             </main>
 
             {isAddingData && (
