@@ -24,6 +24,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         allTransactions,
         unfilteredTransactions,
         addTransaction,
+        updateTransaction,
         deleteTransaction,
         allAgents,
         addAgent,
@@ -116,6 +117,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                 <DatabaseView
                     transactions={unfilteredTransactions.filter(t => t.rok === dateRange.year)}
                     onDelete={deleteTransaction}
+                    onUpdate={updateTransaction}
+                    agents={allAgents}
                 />
             )
             case 'performance': return (

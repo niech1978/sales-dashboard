@@ -121,6 +121,29 @@ export function useData() {
         setDbTransactions(dbTransactions.filter(t => t.id !== id))
     }
 
+    const updateTransaction = async (transaction: Transaction) => {
+        if (!transaction.id) {
+            console.error('Cannot update transaction without id')
+            return
+        }
+
+        const { id, ...transWithoutId } = transaction
+        const { data, error } = await supabase
+            .from('transactions')
+            .update(transWithoutId)
+            .eq('id', id)
+            .select()
+
+        if (error) {
+            console.error('Error updating transaction:', error)
+            return
+        }
+
+        if (data) {
+            setDbTransactions(dbTransactions.map(t => t.id === id ? data[0] : t))
+        }
+    }
+
     const addAgent = async (agent: Agent) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id: _id, ...agentWithoutId } = agent
@@ -162,6 +185,7 @@ export function useData() {
         allTransactions,
         unfilteredTransactions,
         addTransaction,
+        updateTransaction,
         deleteTransaction,
         allAgents,
         addAgent,

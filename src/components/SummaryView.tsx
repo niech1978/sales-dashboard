@@ -11,11 +11,22 @@ interface SummaryViewProps {
 
 const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewProps) => {
     const stats = useMemo(() => {
+        // Helper to calculate wykonanie (prowizja - koszty + kredyt)
+        const calcWykonanie = (t: Transaction) => {
+            const prowizja = t.prowizjaNetto || 0
+            const koszty = t.koszty || 0
+            const kredyt = t.kredyt || 0
+            return prowizja - koszty + kredyt
+        }
+
         // Current period stats
         const totalSales = transactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
         const totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
+        const totalWykonanie = transactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
+        const totalKoszty = transactions.reduce((acc, curr) => acc + (curr.koszty || 0), 0)
+        const totalKredyt = transactions.reduce((acc, curr) => acc + (curr.kredyt || 0), 0)
         const transactionCount = transactions.length
-        const avgCommission = totalCommission / (transactionCount || 1)
+        const avgCommission = totalWykonanie / (transactionCount || 1)
         const avgCommissionPct = totalSales > 0 ? (totalCommission / totalSales) * 100 : 0
 
         // Previous period calculation
@@ -37,7 +48,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
         );
 
         const prevSales = prevPeriodTransactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
-        const prevCommission = prevPeriodTransactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
+        const prevWykonanie = prevPeriodTransactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
         const prevCount = prevPeriodTransactions.length
 
         const getTrend = (current: number, previous: number) => {
@@ -52,10 +63,11 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
         };
 
         return {
-            totalSales, totalCommission, transactionCount, avgCommission, avgCommissionPct,
+            totalSales, totalCommission, totalWykonanie, totalKoszty, totalKredyt,
+            transactionCount, avgCommission, avgCommissionPct,
             trends: {
                 sales: getTrend(totalSales, prevSales),
-                commission: getTrend(totalCommission, prevCommission),
+                wykonanie: getTrend(totalWykonanie, prevWykonanie),
                 count: getCountTrend(transactionCount, prevCount)
             }
         }
@@ -65,7 +77,12 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
         return branches.map(name => ({
             name,
-            value: transactions.filter(t => t.oddzial === name).reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
+            value: transactions.filter(t => t.oddzial === name).reduce((acc, curr) => {
+                const prowizja = curr.prowizjaNetto || 0
+                const koszty = curr.koszty || 0
+                const kredyt = curr.kredyt || 0
+                return acc + (prowizja - koszty + kredyt)
+            }, 0)
         }))
     }, [transactions])
 
@@ -85,11 +102,11 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                     trendLabel="vs poprzedni okres"
                 />
                 <StatCard
-                    title="Suma Prowizji"
-                    value={`${formatCurrency(stats.totalCommission)} PLN`}
-                    trend={stats.trends.commission}
+                    title="Wykonanie"
+                    value={`${formatCurrency(stats.totalWykonanie)} PLN`}
+                    trend={stats.trends.wykonanie}
                     icon={<TrendingUp size={20} color="var(--accent-pink)" />}
-                    trendLabel="vs poprzedni okres"
+                    trendLabel="prowizja - koszty + kredyt"
                 />
                 <StatCard
                     title="Liczba Transakcji"
@@ -99,17 +116,17 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                     trendLabel="vs poprzedni okres"
                 />
                 <StatCard
-                    title="Średnia Prowizja"
+                    title="Średnie Wykonanie"
                     value={`${formatCurrency(stats.avgCommission)} PLN`}
                     trend={`${stats.avgCommissionPct.toFixed(2)}%`}
                     icon={<Users size={20} color="var(--accent-green)" />}
-                    trendLabel="śr. stawka"
+                    trendLabel="śr. stawka prowizji"
                 />
             </div>
 
             <div className="grid-cols-2-1" style={{ marginTop: '2.5rem' }}>
                 <div className="glass-card">
-                    <h3 style={{ marginBottom: '2rem' }}>Prowizja wg Oddziałów</h3>
+                    <h3 style={{ marginBottom: '2rem' }}>Wykonanie wg Oddziałów</h3>
                     <div style={{ height: '300px', width: '100%' }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={branchData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -138,7 +155,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                                     }}
                                     itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
                                     labelStyle={{ color: 'white', fontWeight: 700, marginBottom: '0.5rem' }}
-                                    formatter={(value: number | undefined) => [`${formatCurrency(value)} zł`, 'Prowizja']}
+                                    formatter={(value: number | undefined) => [`${formatCurrency(value)} zł`, 'Wykonanie']}
                                     cursor={{ fill: 'rgba(99, 102, 241, 0.1)', radius: 8 }}
                                 />
                                 <Bar
@@ -163,6 +180,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                                 const initials = t.agent
                                     ? t.agent.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').toUpperCase()
                                     : '?';
+                                const wykonanie = (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
                                 return (
                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -179,7 +197,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.oddzial} • {t.typNieruchomosci}</p>
                                             </div>
                                         </div>
-                                        <p style={{ fontWeight: 700, color: 'var(--accent-green)' }}>{formatCurrency(t.prowizjaNetto)} zł</p>
+                                        <p style={{ fontWeight: 700, color: 'var(--accent-green)' }}>{formatCurrency(wykonanie)} zł</p>
                                     </div>
                                 );
                             })

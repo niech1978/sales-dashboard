@@ -10,6 +10,8 @@ export interface Transaction {
     adres: string;
     prowizjaNetto: number;
     wartoscNieruchomosci: number;
+    koszty?: number;       // Koszty transakcji - obniżają prowizję (domyślnie 0)
+    kredyt?: number;       // Kredyt - wraz z prowizją tworzą wykonanie (domyślnie 0)
 }
 
 export interface Activity {

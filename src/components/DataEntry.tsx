@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Save, Calendar, User, Building2, Home, MapPin, DollarSign, Repeat } from 'lucide-react'
+import { X, Save, Calendar, User, Building2, Home, MapPin, DollarSign, Repeat, MinusCircle, CreditCard } from 'lucide-react'
 import type { Transaction, Agent } from '../types'
 
 interface DataEntryProps {
@@ -18,7 +18,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
         prowizjaNetto: 0,
         wartoscNieruchomosci: 0,
         oddzial: 'Kraków',
-        adres: ''
+        adres: '',
+        koszty: 0,
+        kredyt: 0
     })
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -193,6 +195,39 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                                 required
                                 value={formData.prowizjaNetto}
                                 onChange={e => setFormData({ ...formData, prowizjaNetto: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                        <div className="form-group">
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><MinusCircle size={16} /> Koszty (zł)</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                placeholder="Koszty obniżają prowizję"
+                                value={formData.koszty || 0}
+                                onChange={e => setFormData({ ...formData, koszty: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><CreditCard size={16} /> Kredyt (zł)</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                placeholder="Kredyt + prowizja = wykonanie"
+                                value={formData.kredyt || 0}
+                                onChange={e => setFormData({ ...formData, kredyt: parseFloat(e.target.value) || 0 })}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wykonanie (zł)</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                disabled
+                                value={((formData.prowizjaNetto || 0) - (formData.koszty || 0) + (formData.kredyt || 0)).toFixed(2)}
+                                style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', fontWeight: 700 }}
                             />
                         </div>
                     </div>

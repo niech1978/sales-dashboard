@@ -70,11 +70,16 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
                 const dbTarget = branchTargetsFromDb.find(t => t.oddzial === branch && t.miesiac === month)
                 const plan = dbTarget?.plan_kwota || 0
 
-                // Calculate wykonanie from transactions
+                // Calculate wykonanie from transactions (prowizja - koszty + kredyt)
                 const monthTransactions = yearTransactions.filter(
                     t => t.oddzial === branch && t.miesiac === month
                 )
-                const wykonanie = monthTransactions.reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+                const wykonanie = monthTransactions.reduce((sum, t) => {
+                    const prowizja = t.prowizjaNetto || 0
+                    const koszty = t.koszty || 0
+                    const kredyt = t.kredyt || 0
+                    return sum + (prowizja - koszty + kredyt)
+                }, 0)
 
                 // Only include if there's a plan or wykonanie
                 if (plan > 0 || wykonanie > 0) {
@@ -93,23 +98,30 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
         return result
     }, [branchTargetsFromDb, yearTransactions, year])
 
-    // Calculate prowizja from transactions for each agent
+    // Calculate wykonanie (prowizja - koszty + kredyt) from transactions for each agent
     // Also include agents from transactions who don't have a performance record yet
     const agentPerformanceWithProwizja = useMemo(() => {
         // Get all unique agents from transactions with their branch
         const agentsFromTransactions = new Map<string, { name: string; oddzial: string; prowizja: number }>()
 
         yearTransactions.forEach(t => {
-            if (t.agent && t.prowizjaNetto > 0) {
-                const existing = agentsFromTransactions.get(t.agent)
-                if (existing) {
-                    existing.prowizja += t.prowizjaNetto
-                } else {
-                    agentsFromTransactions.set(t.agent, {
-                        name: t.agent,
-                        oddzial: t.oddzial,
-                        prowizja: t.prowizjaNetto
-                    })
+            if (t.agent) {
+                const prowizja = t.prowizjaNetto || 0
+                const koszty = t.koszty || 0
+                const kredyt = t.kredyt || 0
+                const wykonanie = prowizja - koszty + kredyt
+
+                if (wykonanie > 0 || prowizja > 0) {
+                    const existing = agentsFromTransactions.get(t.agent)
+                    if (existing) {
+                        existing.prowizja += wykonanie
+                    } else {
+                        agentsFromTransactions.set(t.agent, {
+                            name: t.agent,
+                            oddzial: t.oddzial,
+                            prowizja: wykonanie
+                        })
+                    }
                 }
             }
         })
@@ -156,20 +168,27 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
             const agents = agentPerformanceWithProwizja.filter(a => a.oddzial === branch)
             const targets = branchTargets.filter(t => t.oddzial === branch)
 
-            // Prowizja from transactions
-            const totalProwizja = yearTransactions
-                .filter(t => t.oddzial === branch)
-                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+            // Wykonanie from transactions (prowizja - koszty + kredyt)
+            const branchTransactions = yearTransactions.filter(t => t.oddzial === branch)
+            const totalProwizja = branchTransactions.reduce((sum, t) => {
+                const prowizja = t.prowizjaNetto || 0
+                const koszty = t.koszty || 0
+                const kredyt = t.kredyt || 0
+                return sum + (prowizja - koszty + kredyt)
+            }, 0)
             const totalSpotkania = agents.reduce((sum, a) => sum + (a.spotkania_pozyskowe || 0), 0)
             const totalUmowy = agents.reduce((sum, a) => sum + (a.nowe_umowy || 0), 0)
             const totalPrezentacje = agents.reduce((sum, a) => sum + (a.prezentacje || 0), 0)
             const totalNieruchomosci = agents.reduce((sum, a) => sum + (a.suma_nieruchomosci || 0), 0)
 
             const planTotal = targets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
-            // Wykonanie teraz z transakcji
-            const wykonanieTotal = yearTransactions
-                .filter(t => t.oddzial === branch)
-                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+            // Wykonanie teraz z transakcji (prowizja - koszty + kredyt)
+            const wykonanieTotal = branchTransactions.reduce((sum, t) => {
+                const prowizja = t.prowizjaNetto || 0
+                const koszty = t.koszty || 0
+                const kredyt = t.kredyt || 0
+                return sum + (prowizja - koszty + kredyt)
+            }, 0)
 
             return {
                 oddzial: branch,
@@ -193,7 +212,7 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
             .slice(0, 10)
     }, [agentPerformanceWithProwizja])
 
-    // Monthly targets chart data - wykonanie from transactions
+    // Monthly targets chart data - wykonanie from transactions (prowizja - koszty + kredyt)
     const monthlyTargetsData = useMemo(() => {
         const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
         return months.map((name, index) => {
@@ -201,10 +220,15 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
             const monthTargets = branchTargetsFromDb.filter(t => t.miesiac === month)
             const plan = monthTargets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
 
-            // Wykonanie from transactions
+            // Wykonanie from transactions (prowizja - koszty + kredyt)
             const wykonanie = yearTransactions
                 .filter(t => t.miesiac === month)
-                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
+                .reduce((sum, t) => {
+                    const prowizja = t.prowizjaNetto || 0
+                    const koszty = t.koszty || 0
+                    const kredyt = t.kredyt || 0
+                    return sum + (prowizja - koszty + kredyt)
+                }, 0)
 
             return { name, plan, wykonanie }
         })
