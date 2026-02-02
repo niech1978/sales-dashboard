@@ -7,7 +7,6 @@ export default function Auth() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isSignUp, setIsSignUp] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -39,17 +38,6 @@ export default function Auth() {
                 });
                 if (error) throw error;
                 setMessage('Link do resetowania hasła został wysłany na Twój e-mail!');
-            } else if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: { full_name: email.split('@')[0] },
-                        emailRedirectTo: window.location.origin
-                    }
-                });
-                if (error) throw error;
-                setMessage('Sprawdź e-mail, aby potwierdzić rejestrację!');
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
@@ -58,7 +46,17 @@ export default function Auth() {
                 if (error) throw error;
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Wystąpił błąd');
+            const errorMessage = err instanceof Error ? err.message : 'Wystąpił błąd';
+            // Translate common Supabase errors to Polish
+            if (errorMessage.includes('Invalid login credentials')) {
+                setError('Nieprawidłowy email lub hasło');
+            } else if (errorMessage.includes('Email not confirmed')) {
+                setError('Email nie został potwierdzony');
+            } else if (errorMessage.includes('User not found')) {
+                setError('Użytkownik nie istnieje w systemie');
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setLoading(false);
         }
@@ -95,7 +93,7 @@ export default function Auth() {
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Freedom</h1>
                     <p style={{ color: 'var(--text-muted)' }}>
-                        {isUpdatingPassword ? 'Ustaw nowe hasło' : (isForgotPassword ? 'Resetowanie hasła' : (isSignUp ? 'Utwórz nowe konto' : ''))}
+                        {isUpdatingPassword ? 'Ustaw nowe hasło' : (isForgotPassword ? 'Resetowanie hasła' : 'Panel sprzedażowy')}
                     </p>
                 </div>
 
@@ -207,13 +205,13 @@ export default function Auth() {
                             fontSize: '1rem'
                         }}
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : (isUpdatingPassword ? 'Zapisz nowe hasło' : (isForgotPassword ? 'Wyślij link' : (isSignUp ? 'Zarejestruj się' : 'Zaloguj się')))}
+                        {loading ? <Loader2 className="animate-spin" /> : (isUpdatingPassword ? 'Zapisz nowe hasło' : (isForgotPassword ? 'Wyślij link' : 'Zaloguj się'))}
                         {!loading && <LogIn size={18} style={{ marginLeft: '0.5rem' }} />}
                     </button>
                 </form>
 
-                <div style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {(isForgotPassword || isUpdatingPassword) ? (
+                {(isForgotPassword || isUpdatingPassword) && (
+                    <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                         <button
                             onClick={() => {
                                 setIsForgotPassword(false);
@@ -225,26 +223,12 @@ export default function Auth() {
                         >
                             Powrót do logowania
                         </button>
-                    ) : (
-                        <button
-                            onClick={() => {
-                                setIsSignUp(!isSignUp);
-                                setError(null);
-                                setMessage(null);
-                            }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--primary)',
-                                fontSize: '0.875rem',
-                                cursor: 'pointer',
-                                fontWeight: 600
-                            }}
-                        >
-                            {isSignUp ? 'Masz już konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się'}
-                        </button>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Dostęp tylko dla autoryzowanych użytkowników
+                </p>
             </div>
         </div>
     );

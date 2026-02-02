@@ -49,14 +49,30 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
                 setUser(user)
-                const { data: profile } = await supabase
-                    .from('profiles')
+
+                // Try to get role from app_users table
+                const { data: appUser } = await supabase
+                    .from('app_users')
                     .select('role')
-                    .eq('id', user.id)
+                    .eq('auth_user_id', user.id)
                     .single()
 
-                if (profile) {
-                    setUserRole(profile.role)
+                if (appUser) {
+                    setUserRole(appUser.role)
+                } else {
+                    // Fallback: check profiles table (legacy)
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('role')
+                        .eq('id', user.id)
+                        .single()
+
+                    if (profile) {
+                        setUserRole(profile.role)
+                    } else {
+                        // Default to admin if no profile exists (for initial setup)
+                        setUserRole('admin')
+                    }
                 }
             }
         }

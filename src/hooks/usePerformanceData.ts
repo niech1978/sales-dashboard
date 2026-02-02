@@ -93,14 +93,73 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
         return result
     }, [branchTargetsFromDb, yearTransactions, year])
 
-    // Aggregate stats by branch
+    // Calculate prowizja from transactions for each agent
+    // Also include agents from transactions who don't have a performance record yet
+    const agentPerformanceWithProwizja = useMemo(() => {
+        // Get all unique agents from transactions with their branch
+        const agentsFromTransactions = new Map<string, { name: string; oddzial: string; prowizja: number }>()
+
+        yearTransactions.forEach(t => {
+            if (t.agent && t.prowizjaNetto > 0) {
+                const existing = agentsFromTransactions.get(t.agent)
+                if (existing) {
+                    existing.prowizja += t.prowizjaNetto
+                } else {
+                    agentsFromTransactions.set(t.agent, {
+                        name: t.agent,
+                        oddzial: t.oddzial,
+                        prowizja: t.prowizjaNetto
+                    })
+                }
+            }
+        })
+
+        // Update existing performance records with prowizja from transactions
+        const updatedPerformance = agentPerformance.map(agent => {
+            const transactionData = agentsFromTransactions.get(agent.agent_name)
+            const prowizjaFromTransactions = transactionData?.prowizja || 0
+
+            // Remove from map so we know it's already processed
+            agentsFromTransactions.delete(agent.agent_name)
+
+            return {
+                ...agent,
+                prowizja_netto_kredyt: prowizjaFromTransactions
+            }
+        })
+
+        // Add agents from transactions who don't have a performance record
+        const newAgentsFromTransactions: AgentPerformance[] = Array.from(agentsFromTransactions.values()).map(agent => ({
+            agent_name: agent.name,
+            oddzial: agent.oddzial,
+            rok: year,
+            miesiac: null,
+            prowizja_netto_kredyt: agent.prowizja,
+            spotkania_pozyskowe: 0,
+            nowe_umowy: 0,
+            prezentacje: 0,
+            mieszkania: 0,
+            domy: 0,
+            dzialki: 0,
+            inne: 0,
+            suma_nieruchomosci: 0
+        }))
+
+        return [...updatedPerformance, ...newAgentsFromTransactions]
+    }, [agentPerformance, yearTransactions, year])
+
+    // Aggregate stats by branch - use full agent list including those from transactions
     const branchPerformance = useMemo(() => {
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
         return branches.map(branch => {
-            const agents = agentPerformance.filter(a => a.oddzial === branch)
+            // Use the merged agent list (including agents from transactions)
+            const agents = agentPerformanceWithProwizja.filter(a => a.oddzial === branch)
             const targets = branchTargets.filter(t => t.oddzial === branch)
 
-            const totalProwizja = agents.reduce((sum, a) => sum + (a.prowizja_netto_kredyt || 0), 0)
+            // Prowizja from transactions
+            const totalProwizja = yearTransactions
+                .filter(t => t.oddzial === branch)
+                .reduce((sum, t) => sum + (t.prowizjaNetto || 0), 0)
             const totalSpotkania = agents.reduce((sum, a) => sum + (a.spotkania_pozyskowe || 0), 0)
             const totalUmowy = agents.reduce((sum, a) => sum + (a.nowe_umowy || 0), 0)
             const totalPrezentacje = agents.reduce((sum, a) => sum + (a.prezentacje || 0), 0)
@@ -125,14 +184,14 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
                 wykonaniePercent: planTotal > 0 ? (wykonanieTotal / planTotal) * 100 : 0
             }
         })
-    }, [agentPerformance, branchTargets, yearTransactions])
+    }, [agentPerformanceWithProwizja, branchTargets, yearTransactions])
 
     // Top agents across all branches
     const topAgents = useMemo(() => {
-        return [...agentPerformance]
+        return [...agentPerformanceWithProwizja]
             .sort((a, b) => (b.prowizja_netto_kredyt || 0) - (a.prowizja_netto_kredyt || 0))
             .slice(0, 10)
-    }, [agentPerformance])
+    }, [agentPerformanceWithProwizja])
 
     // Monthly targets chart data - wykonanie from transactions
     const monthlyTargetsData = useMemo(() => {
@@ -152,7 +211,7 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
     }, [branchTargetsFromDb, yearTransactions])
 
     return {
-        agentPerformance,
+        agentPerformance: agentPerformanceWithProwizja, // prowizja from transactions
         branchTargets,
         branchTargetsFromDb, // only plans from DB
         branchPerformance,

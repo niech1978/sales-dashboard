@@ -1,12 +1,286 @@
 import React, { useMemo, useState } from 'react'
-import { Trophy, Target, Users, TrendingUp, Calendar, Building2, PlusCircle, Trash2, Edit3 } from 'lucide-react'
+import { Trophy, Target, Users, TrendingUp, Calendar, Building2, PlusCircle, Edit3, X, Save } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { usePerformanceData } from '../hooks/usePerformanceData'
 import { supabase } from '../lib/supabaseClient'
 import PerformanceEntry from './PerformanceEntry'
 import TargetEntry from './TargetEntry'
 import type { AgentPerformance } from '../types'
+
+// Agent Edit Modal Component
+interface AgentEditModalProps {
+    agent: AgentPerformance
+    onSave: () => void
+    onClose: () => void
+}
+
+const AgentEditModal = ({ agent, onSave, onClose }: AgentEditModalProps) => {
+    const [formData, setFormData] = useState({
+        spotkania_pozyskowe: agent.spotkania_pozyskowe || 0,
+        nowe_umowy: agent.nowe_umowy || 0,
+        prezentacje: agent.prezentacje || 0,
+        mieszkania: agent.mieszkania || 0,
+        domy: agent.domy || 0,
+        dzialki: agent.dzialki || 0,
+        inne: agent.inne || 0
+    })
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
+    const handleChange = (field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: parseInt(value) || 0
+        }))
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        setError(null)
+
+        const suma = formData.mieszkania + formData.domy + formData.dzialki + formData.inne
+
+        const dataToSave = {
+            spotkania_pozyskowe: formData.spotkania_pozyskowe,
+            nowe_umowy: formData.nowe_umowy,
+            prezentacje: formData.prezentacje,
+            mieszkania: formData.mieszkania,
+            domy: formData.domy,
+            dzialki: formData.dzialki,
+            inne: formData.inne,
+            suma_nieruchomosci: suma
+        }
+
+        let saveError
+
+        if (agent.id) {
+            // Update existing record
+            const { error } = await supabase
+                .from('agent_performance')
+                .update(dataToSave)
+                .eq('id', agent.id)
+            saveError = error
+        } else {
+            // Create new record for agent from transactions
+            const { error } = await supabase
+                .from('agent_performance')
+                .insert({
+                    ...dataToSave,
+                    agent_name: agent.agent_name,
+                    oddzial: agent.oddzial,
+                    rok: agent.rok,
+                    miesiac: null,
+                    prowizja_netto_kredyt: 0 // prowizja is calculated from transactions
+                })
+            saveError = error
+        }
+
+        if (saveError) {
+            setError(saveError.message)
+            setLoading(false)
+            return
+        }
+
+        setLoading(false)
+        onSave()
+        onClose()
+    }
+
+    const formatCurrency = (val: number) => {
+        return val.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' zł'
+    }
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <motion.div
+                className="glass-card modal-card"
+                style={{ maxWidth: '500px', width: '100%' }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <Edit3 size={24} color={agent.id ? "var(--primary)" : "var(--accent-green)"} />
+                        {agent.id ? 'Edytuj wydajność' : 'Dodaj dane wydajności'}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="btn"
+                        style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.1)' }}
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Agent info */}
+                <div style={{
+                    background: 'rgba(99, 102, 241, 0.1)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    marginBottom: '1.5rem'
+                }}>
+                    <p style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem' }}>{agent.agent_name}</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{agent.oddzial} • {agent.rok}</p>
+                </div>
+
+                {/* Prowizja - read only */}
+                <div style={{
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Prowizja (z transakcji)</p>
+                        <p style={{ fontWeight: 700, fontSize: '1.5rem', color: 'var(--accent-green)' }}>
+                            {formatCurrency(agent.prowizja_netto_kredyt || 0)}
+                        </p>
+                    </div>
+                    <Trophy size={28} color="var(--accent-green)" style={{ opacity: 0.5 }} />
+                </div>
+
+                {error && (
+                    <div style={{
+                        background: 'rgba(236, 72, 153, 0.1)',
+                        border: '1px solid var(--accent-pink)',
+                        borderRadius: '8px',
+                        padding: '1rem',
+                        marginBottom: '1rem',
+                        color: 'var(--accent-pink)'
+                    }}>
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    {/* Editable fields */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label><Users size={14} /> Spotkania pozyskowe</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                value={formData.spotkania_pozyskowe}
+                                onChange={e => handleChange('spotkania_pozyskowe', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label><Calendar size={14} /> Nowe umowy</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                value={formData.nowe_umowy}
+                                onChange={e => handleChange('nowe_umowy', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label><Target size={14} /> Prezentacje</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                value={formData.prezentacje}
+                                onChange={e => handleChange('prezentacje', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                    </div>
+
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '0.75rem' }}>Nieruchomości:</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                        <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Mieszkania</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                style={{ padding: '0.75rem' }}
+                                value={formData.mieszkania}
+                                onChange={e => handleChange('mieszkania', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Domy</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                style={{ padding: '0.75rem' }}
+                                value={formData.domy}
+                                onChange={e => handleChange('domy', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Działki</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                style={{ padding: '0.75rem' }}
+                                value={formData.dzialki}
+                                onChange={e => handleChange('dzialki', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label style={{ fontSize: '0.75rem' }}>Inne</label>
+                            <input
+                                type="number"
+                                className="input-field"
+                                style={{ padding: '0.75rem' }}
+                                value={formData.inne}
+                                onChange={e => handleChange('inne', e.target.value)}
+                                min="0"
+                            />
+                        </div>
+                    </div>
+
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '1rem',
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        borderRadius: '12px',
+                        marginBottom: '1.5rem'
+                    }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Suma nieruchomości:</span>
+                        <span style={{ fontWeight: 700, fontSize: '1.25rem' }}>
+                            {formData.mieszkania + formData.domy + formData.dzialki + formData.inne}
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="btn"
+                            style={{ background: 'rgba(255,255,255,0.1)' }}
+                        >
+                            Anuluj
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            <Save size={18} />
+                            {loading ? 'Zapisywanie...' : 'Zapisz'}
+                        </button>
+                    </div>
+                </form>
+            </motion.div>
+        </div>
+    )
+}
 
 const COLORS = ['#6366f1', '#ec4899', '#3b82f6']
 const BRANCH_COLORS: Record<string, string> = {
@@ -281,7 +555,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
     const [isEditingTargets, setIsEditingTargets] = useState(false)
-    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [editingAgent, setEditingAgent] = useState<AgentPerformance | null>(null)
 
     const {
         agentPerformance,
@@ -310,24 +584,6 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
 
     const handleAddPerformance = (_data: AgentPerformance) => {
         refreshData()
-    }
-
-    const handleDeletePerformance = async (id: string) => {
-        if (!confirm('Czy na pewno chcesz usunąć ten wpis?')) return
-
-        setDeletingId(id)
-        const { error } = await supabase
-            .from('agent_performance')
-            .delete()
-            .eq('id', id)
-
-        if (error) {
-            console.error('Delete error:', error)
-            alert('Błąd usuwania: ' + error.message)
-        } else {
-            refreshData()
-        }
-        setDeletingId(null)
     }
 
     // Get unique agents from performance data for the form
@@ -612,7 +868,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Prezentacje</th>
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Nieruchomości</th>
                                         {userRole === 'admin' && (
-                                            <th style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500, width: '60px' }}>Akcje</th>
+                                            <th style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500, width: '60px' }}>Edytuj</th>
                                         )}
                                     </tr>
                                 </thead>
@@ -650,21 +906,19 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.nowe_umowy}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.prezentacje}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>{agent.suma_nieruchomosci}</td>
-                                            {userRole === 'admin' && agent.id && (
+                                            {userRole === 'admin' && (
                                                 <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                     <button
-                                                        onClick={() => handleDeletePerformance(agent.id!)}
-                                                        disabled={deletingId === agent.id}
+                                                        onClick={() => setEditingAgent(agent)}
                                                         className="btn"
                                                         style={{
                                                             padding: '0.4rem',
-                                                            background: 'rgba(236, 72, 153, 0.15)',
-                                                            border: 'none',
-                                                            opacity: deletingId === agent.id ? 0.5 : 1
+                                                            background: agent.id ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                                            border: 'none'
                                                         }}
-                                                        title="Usuń wpis"
+                                                        title={agent.id ? "Edytuj wydajność" : "Dodaj dane wydajności"}
                                                     >
-                                                        <Trash2 size={16} color="var(--accent-pink)" />
+                                                        <Edit3 size={16} color={agent.id ? "var(--primary)" : "var(--accent-green)"} />
                                                     </button>
                                                 </td>
                                             )}
@@ -697,6 +951,17 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                         existingTargets={branchTargetsFromDb}
                         onSave={refreshData}
                         onClose={() => setIsEditingTargets(false)}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Agent Edit Modal */}
+            <AnimatePresence>
+                {editingAgent && (
+                    <AgentEditModal
+                        agent={editingAgent}
+                        onSave={refreshData}
+                        onClose={() => setEditingAgent(null)}
                     />
                 )}
             </AnimatePresence>

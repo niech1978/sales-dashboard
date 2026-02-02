@@ -41,6 +41,7 @@ const PerformanceEntry = ({ agents, year, onAdd, onClose }: PerformanceEntryProp
 
         const dataToInsert = {
             ...formData,
+            prowizja_netto_kredyt: 0, // prowizja is calculated from transactions
             suma_nieruchomosci: suma
         }
 
@@ -193,18 +194,21 @@ const PerformanceEntry = ({ agents, year, onAdd, onClose }: PerformanceEntryProp
                         </div>
                     </div>
 
-                    {/* Prowizja */}
-                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                        <label><Trophy size={14} /> Prowizja netto + kredyt (zł)</label>
-                        <input
-                            type="number"
-                            className="input-field"
-                            value={formData.prowizja_netto_kredyt || ''}
-                            onChange={e => handleChange('prowizja_netto_kredyt', parseFloat(e.target.value) || 0)}
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                        />
+                    {/* Prowizja info */}
+                    <div style={{
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        marginBottom: '1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                    }}>
+                        <Trophy size={20} color="var(--accent-green)" />
+                        <div>
+                            <p style={{ color: 'var(--accent-green)', fontWeight: 600, fontSize: '0.875rem' }}>Prowizja obliczana automatycznie</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Wartość prowizji jest pobierana z tabeli transakcji</p>
+                        </div>
                     </div>
 
                     {/* Aktywności */}
