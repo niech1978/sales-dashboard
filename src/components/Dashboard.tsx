@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy } from 'lucide-react'
+import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy, Shield } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useData } from '../hooks/useData'
 import DataEntry from './DataEntry'
@@ -12,12 +12,13 @@ import AgentsView from './AgentsView'
 import ReportsView from './ReportsView'
 import DatabaseView from './DatabaseView'
 import PerformanceView from './PerformanceView'
+import UserManagement from './UserManagement'
 
 interface DashboardProps {
     onLogout: () => void
 }
 
-type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database' | 'performance'
+type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database' | 'performance' | 'users'
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
     const {
@@ -43,6 +44,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     const [isAddingAgent, setIsAddingAgent] = useState(false)
     const [user, setUser] = useState<SupabaseUser | null>(null)
     const [userRole, setUserRole] = useState<string>('agent')
+    const [userOddzial, setUserOddzial] = useState<string | null>(null)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
     useEffect(() => {
@@ -51,29 +53,23 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             if (user) {
                 setUser(user)
 
-                // Try to get role from app_users table
+                // Pobierz rolę i oddział z tabeli app_users (jedyne źródło uprawnień)
                 const { data: appUser } = await supabase
                     .from('app_users')
-                    .select('role')
+                    .select('role, oddzial, name')
                     .eq('auth_user_id', user.id)
+                    .eq('is_active', true)
                     .single()
 
                 if (appUser) {
                     setUserRole(appUser.role)
+                    setUserOddzial(appUser.oddzial)
                 } else {
-                    // Fallback: check profiles table (legacy)
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('role')
-                        .eq('id', user.id)
-                        .single()
-
-                    if (profile) {
-                        setUserRole(profile.role)
-                    } else {
-                        // Default to admin if no profile exists (for initial setup)
-                        setUserRole('admin')
-                    }
+                    // Brak wpisu w app_users = brak dostępu (agent bez oddziału)
+                    // Admin musi dodać użytkownika do tabeli app_users w Supabase
+                    console.warn('Użytkownik nie ma przypisanych uprawnień w tabeli app_users:', user.email)
+                    setUserRole('agent')
+                    setUserOddzial(null)
                 }
             }
         }
@@ -128,6 +124,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     transactions={transactions}
                 />
             )
+            case 'users': return <UserManagement />
             default: return (
                 <SummaryView
                     transactions={allTransactions}
@@ -145,7 +142,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             case 'agents': return 'Baza Agentów'
             case 'reports': return 'Raporty i Wyniki'
             case 'database': return 'Pełna Baza Danych'
-            case 'performance': return 'Wydajność Agentów'
+            case 'performance': return 'Aktywność Agentów'
+            case 'users': return 'Zarządzanie Użytkownikami'
             default: return 'Podsumowanie'
         }
     }
@@ -216,7 +214,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                             />
                             <NavItem
                                 icon={<Trophy size={20} />}
-                                label="Wydajność"
+                                label="Aktywność"
                                 active={activeTab === 'performance'}
                                 onClick={() => setActiveTab('performance')}
                             />
@@ -228,7 +226,16 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                                 onClick={() => setActiveTab('database')}
                             />
 
-                            {userRole === 'admin' && (
+                            {(userRole === 'admin' || userRole === 'superadmin') && (
+                                <NavItem
+                                    icon={<Shield size={20} />}
+                                    label="Użytkownicy"
+                                    active={activeTab === 'users'}
+                                    onClick={() => setActiveTab('users')}
+                                />
+                            )}
+
+                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
                                 <>
                                     <div style={{ margin: '1rem 0', borderTop: '1px solid var(--border)' }} />
                                     <div onClick={(e) => { e.preventDefault(); setIsAddingData(true); }}>
@@ -242,30 +249,68 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                             {user && (
                                 <div style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.75rem',
+                                    flexDirection: 'column',
+                                    gap: '0.5rem',
                                     padding: '0.75rem',
                                     background: 'rgba(255, 255, 255, 0.05)',
                                     borderRadius: '12px',
                                     marginBottom: '1rem',
                                     border: '1px solid var(--border)'
                                 }}>
-                                    <div style={{
-                                        width: '32px',
-                                        height: '32px',
-                                        background: 'var(--primary)',
-                                        borderRadius: '8px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <User size={18} color="white" />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{
+                                            width: '32px',
+                                            height: '32px',
+                                            background: userRole === 'superadmin' ? '#f59e0b' : userRole === 'admin' ? 'var(--accent-pink)' : userRole === 'manager' ? 'var(--accent-blue)' : 'var(--primary)',
+                                            borderRadius: '8px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}>
+                                            <User size={18} color="white" />
+                                        </div>
+                                        <div style={{ overflow: 'hidden', flex: 1 }}>
+                                            <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {user.email}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div style={{ overflow: 'hidden' }}>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>Zalogowany jako</p>
-                                        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {user.email}
-                                        </p>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        <span style={{
+                                            fontSize: '0.6875rem',
+                                            padding: '0.25rem 0.5rem',
+                                            borderRadius: '6px',
+                                            background: userRole === 'superadmin' ? 'rgba(245, 158, 11, 0.2)' : userRole === 'admin' ? 'rgba(236, 72, 153, 0.2)' : userRole === 'manager' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(99, 102, 241, 0.2)',
+                                            color: userRole === 'superadmin' ? '#f59e0b' : userRole === 'admin' ? 'var(--accent-pink)' : userRole === 'manager' ? 'var(--accent-blue)' : 'var(--primary)',
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {userRole}
+                                        </span>
+                                        {userOddzial && (
+                                            <span style={{
+                                                fontSize: '0.6875rem',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '6px',
+                                                background: 'rgba(16, 185, 129, 0.2)',
+                                                color: 'var(--accent-green)',
+                                                fontWeight: 600
+                                            }}>
+                                                {userOddzial}
+                                            </span>
+                                        )}
+                                        {(userRole === 'admin' || userRole === 'superadmin') && !userOddzial && (
+                                            <span style={{
+                                                fontSize: '0.6875rem',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '6px',
+                                                background: 'rgba(16, 185, 129, 0.2)',
+                                                color: 'var(--accent-green)',
+                                                fontWeight: 600
+                                            }}>
+                                                Wszystkie oddzialy
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -324,7 +369,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
                         <div>
                             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>{getTabTitle()}</h1>
-                            {activeTab !== 'performance' && (
+                            {activeTab !== 'performance' && activeTab !== 'users' && (
                                 <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                                     <Calendar size={16} style={{ marginRight: '0.5rem' }} />
                                     {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
@@ -332,7 +377,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                             )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            {userRole === 'admin' && activeTab !== 'performance' && (
+                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && activeTab !== 'performance' && activeTab !== 'users' && (
                                 <button
                                     className="mobile-only btn btn-primary"
                                     style={{ padding: '0.75rem' }}
@@ -351,7 +396,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                         </div>
                     </div>
 
-                    {activeTab !== 'performance' && (
+                    {activeTab !== 'performance' && activeTab !== 'users' && (
                         <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
                             <Filter size={18} color="var(--primary)" />
                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -413,7 +458,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     )}
                 </header>
 
-                {activeTab === 'performance' ? (
+                {(activeTab === 'performance' || activeTab === 'users') ? (
                     renderContent()
                 ) : (
                     <AnimatePresence mode="wait">
@@ -436,6 +481,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     availableYears={availableYears}
                     onAdd={addTransaction}
                     onClose={() => setIsAddingData(false)}
+                    userRole={userRole}
+                    userOddzial={userOddzial}
                 />
             )}
 

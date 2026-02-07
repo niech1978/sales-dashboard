@@ -353,7 +353,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
                     <Target size={22} color="var(--accent-pink)" />
                     Plany miesięczne {selectedYear}
                 </h3>
-                {userRole === 'admin' && (
+                {(userRole === 'admin' || userRole === 'superadmin') && (
                     <button
                         className="btn"
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(236, 72, 153, 0.15)', border: '1px solid var(--accent-pink)' }}
@@ -369,7 +369,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
                 <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                     <Target size={40} style={{ marginBottom: '1rem', opacity: 0.3 }} />
                     <p style={{ fontSize: '1rem' }}>Brak danych na {selectedYear}</p>
-                    {userRole === 'admin' && (
+                    {(userRole === 'admin' || userRole === 'superadmin') && (
                         <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', opacity: 0.7 }}>Kliknij "Dodaj Plany" aby wprowadzić cele</p>
                     )}
                 </div>
@@ -627,7 +627,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                     </div>
                 </div>
 
-                {userRole === 'admin' && (
+                {(userRole === 'admin' || userRole === 'superadmin') && (
                     <button
                         className="btn btn-primary"
                         style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -654,7 +654,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                     <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                         Nie ma jeszcze danych wydajności agentów dla tego roku.
                     </p>
-                    {userRole === 'admin' && (
+                    {(userRole === 'admin' || userRole === 'superadmin') && (
                         <button
                             className="btn btn-primary"
                             onClick={() => setIsAddingPerformance(true)}
@@ -867,7 +867,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Umowy</th>
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Prezentacje</th>
                                         <th style={{ textAlign: 'right', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Nieruchomości</th>
-                                        {userRole === 'admin' && (
+                                        {(userRole === 'admin' || userRole === 'superadmin') && (
                                             <th style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500, width: '60px' }}>Edytuj</th>
                                         )}
                                     </tr>
@@ -906,7 +906,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.nowe_umowy}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>{agent.prezentacje}</td>
                                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>{agent.suma_nieruchomosci}</td>
-                                            {userRole === 'admin' && (
+                                            {(userRole === 'admin' || userRole === 'superadmin') && (
                                                 <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                     <button
                                                         onClick={() => setEditingAgent(agent)}

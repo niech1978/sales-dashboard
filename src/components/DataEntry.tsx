@@ -7,9 +7,14 @@ interface DataEntryProps {
     availableYears: number[]
     onAdd: (transaction: Transaction) => void
     onClose: () => void
+    userRole?: string
+    userOddzial?: string | null
 }
 
-const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) => {
+const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin', userOddzial = null }: DataEntryProps) => {
+    // Manager może dodawać tylko do swojego oddziału
+    const defaultOddzial = userRole === 'manager' && userOddzial ? userOddzial : 'Kraków'
+
     const [formData, setFormData] = useState<Partial<Transaction>>({
         miesiac: 1,
         rok: 2026,
@@ -17,7 +22,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
         typNieruchomosci: 'Mieszkanie',
         prowizjaNetto: 0,
         wartoscNieruchomosci: 0,
-        oddzial: 'Kraków',
+        oddzial: defaultOddzial,
         adres: '',
         koszty: 0,
         kredyt: 0
@@ -65,6 +70,8 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose }: DataEntryProps) =
                                 className="input-field"
                                 value={formData.oddzial}
                                 onChange={e => setFormData({ ...formData, oddzial: e.target.value })}
+                                disabled={userRole === 'manager'}
+                                style={userRole === 'manager' ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
                             >
                                 <option value="Kraków">Kraków</option>
                                 <option value="Warszawa">Warszawa</option>
