@@ -19,6 +19,28 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+/* Scroll shadow hints for horizontal scroll on mobile */
+.table-scroll-shadow {
+  position: relative;
+}
+.table-scroll-shadow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 24px;
+  background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.6));
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s;
+  z-index: 5;
+}
+.table-scroll-shadow.scrolled-end::after {
+  opacity: 0;
 }
 
 .modal-overlay {
@@ -316,6 +338,22 @@ h3 {
   table th, table td {
     padding: 0.5rem 0.4rem !important;
     font-size: 0.75rem !important;
+  }
+
+  .table-container table {
+    min-width: 600px;
+  }
+
+  .table-scroll-shadow::after {
+    width: 20px;
+    background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.8));
+  }
+}
+
+@media (max-width: 480px) {
+  table th, table td {
+    padding: 0.4rem 0.3rem !important;
+    font-size: 0.7rem !important;
   }
 }
 @media print {

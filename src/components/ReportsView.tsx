@@ -170,7 +170,7 @@ const ReportsView = ({ transactions, getEffectiveTranches, dateRange }: ReportsV
             </div>
 
             <div className="glass-card table-container" style={{ padding: 0 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '750px' }}>
                     <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
                             <th style={{ padding: '1.5rem 2rem', textAlign: 'left' }}>Miesiąc</th>

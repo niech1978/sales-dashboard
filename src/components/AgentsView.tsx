@@ -97,8 +97,8 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus, getEffec
                 </div>
             </div>
 
-            <div className="glass-card table-container" style={{ padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div className="glass-card table-container" style={{ padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
                     <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
                             <th style={{ padding: '1.5rem 2rem', fontWeight: 600 }}>Ranking</th>

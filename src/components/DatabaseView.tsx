@@ -89,7 +89,7 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
             </div>
 
             <div className="glass-card table-container" style={{ padding: 0, maxHeight: '70vh' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem', minWidth: '1100px' }}>
                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                         <tr style={{ background: 'var(--bg-dark)', borderBottom: '1px solid var(--border)' }}>
                             <SortableHeader label="Oddział" sortKey="oddzial" onSort={requestSort} />

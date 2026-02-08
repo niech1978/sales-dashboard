@@ -375,7 +375,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
                     )}
                 </div>
             ) : (
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-container">
                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
                         <thead>
                             <tr>
@@ -858,7 +858,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                             )}
                         </h3>
                         <div className="table-container">
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                                 <thead>
                                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                         <th style={{ textAlign: 'left', padding: '1rem', color: 'var(--text-muted)', fontWeight: 500 }}>Agent</th>

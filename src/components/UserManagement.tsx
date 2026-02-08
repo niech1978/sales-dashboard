@@ -405,8 +405,8 @@ const UserManagement = () => {
             )}
 
             {/* Tabela użytkowników */}
-            <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="glass-card table-container" style={{ padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
                     <thead>
                         <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
                             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Użytkownik</th>
