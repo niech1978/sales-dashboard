@@ -10,29 +10,64 @@ function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
+    // Detect if URL might contain a recovery/invite token
+    // Supabase fires SIGNED_IN BEFORE PASSWORD_RECOVERY, so we must wait
+    // before showing Dashboard to avoid the flash-of-dashboard problem
+    const hash = window.location.hash
+    const params = new URLSearchParams(window.location.search)
+    const isRecoveryUrl = hash.includes('type=recovery') || hash.includes('type=invite')
+    const hasAuthCode = params.has('code')
+    const waitForRecovery = isRecoveryUrl || hasAuthCode
 
-    // Listen for auth changes
+    let resolved = false
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+
+    const finishLoading = () => {
+      if (!resolved) {
+        resolved = true
+        setLoading(false)
+        if (fallbackTimer) {
+          clearTimeout(fallbackTimer)
+          fallbackTimer = null
+        }
+      }
+    }
+
+    // Use onAuthStateChange instead of getSession() to avoid race conditions
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        // User clicked recovery link — show password form, NOT dashboard
+        // Recovery confirmed — show password form, NOT dashboard
         setIsPasswordRecovery(true)
         setSession(session)
+        finishLoading()
+        window.history.replaceState(null, '', window.location.pathname)
+      } else if (event === 'SIGNED_OUT') {
+        setIsPasswordRecovery(false)
+        setSession(null)
+        finishLoading()
       } else {
         setSession(session)
-        if (event === 'SIGNED_IN' && isPasswordRecovery) {
-          // Password was updated, now allow dashboard
-          setIsPasswordRecovery(false)
+        // Only stop loading if this is NOT a potential recovery flow
+        if (!waitForRecovery) {
+          finishLoading()
         }
       }
     })
 
-    return () => subscription.unsubscribe()
-  }, [isPasswordRecovery])
+    // Fallback: if we're waiting for PASSWORD_RECOVERY but it never fires
+    // (e.g. stale code, or it was a regular invite), stop loading after 2s
+    if (waitForRecovery) {
+      fallbackTimer = setTimeout(() => {
+        finishLoading()
+        window.history.replaceState(null, '', window.location.pathname)
+      }, 2000)
+    }
+
+    return () => {
+      subscription.unsubscribe()
+      if (fallbackTimer) clearTimeout(fallbackTimer)
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -43,7 +78,7 @@ function App() {
   }
 
   if (!session || isPasswordRecovery) {
-    return <Auth onPasswordUpdated={() => setIsPasswordRecovery(false)} />
+    return <Auth isRecovery={isPasswordRecovery} onPasswordUpdated={() => setIsPasswordRecovery(false)} />
   }
 
   return (

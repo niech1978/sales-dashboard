@@ -4,20 +4,28 @@ import { Mail, Lock, LogIn, AlertCircle, Loader2, TrendingUp, Check } from 'luci
 
 interface AuthProps {
     onPasswordUpdated?: () => void;
+    isRecovery?: boolean;
 }
 
-export default function Auth({ onPasswordUpdated }: AuthProps) {
+export default function Auth({ onPasswordUpdated, isRecovery }: AuthProps) {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
-    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(isRecovery || false);
     const [message, setMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        // Detect if we came from a recovery/invite link
+        // Sync with isRecovery prop from App.tsx (handles PASSWORD_RECOVERY event)
+        if (isRecovery) {
+            setIsUpdatingPassword(true);
+        }
+    }, [isRecovery]);
+
+    useEffect(() => {
+        // Fallback: detect recovery/invite from URL hash (implicit flow)
         const hash = window.location.hash;
         const search = window.location.search;
         const fullUrl = hash + search;
@@ -25,15 +33,6 @@ export default function Auth({ onPasswordUpdated }: AuthProps) {
         if (fullUrl.includes('type=recovery') || fullUrl.includes('type=invite')) {
             setIsUpdatingPassword(true);
         }
-
-        // Listen for PASSWORD_RECOVERY event from Supabase
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-            if (event === 'PASSWORD_RECOVERY') {
-                setIsUpdatingPassword(true);
-            }
-        });
-
-        return () => subscription.unsubscribe();
     }, []);
 
     const handleAuth = async (e: React.FormEvent) => {
