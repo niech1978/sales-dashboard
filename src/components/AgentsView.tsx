@@ -1,38 +1,58 @@
 import { useMemo, useState } from 'react'
 import { Search, Filter, UserPlus, Power, PowerOff } from 'lucide-react'
-import type { Transaction, Agent } from '../types'
+import { useWindowWidth } from '../hooks/useWindowWidth'
+import type { Transaction, Agent, EffectiveTranche } from '../types'
 
 interface AgentsViewProps {
     transactions: Transaction[]
     agents: Agent[]
     onAddAgent: () => void
     onToggleStatus: (id: string) => void
+    getEffectiveTranches?: (txs: Transaction[], startMonth: number, endMonth: number, year: number) => EffectiveTranche[]
+    dateRange?: { startMonth: number, endMonth: number, year: number }
+    userRole?: string
 }
 
-const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: AgentsViewProps) => {
+const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus, getEffectiveTranches, dateRange, userRole = 'agent' }: AgentsViewProps) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedBranch, setSelectedBranch] = useState('all')
+    const windowWidth = useWindowWidth()
 
     const agentStats = useMemo(() => {
-        const statsMap: Record<string, { totalComm: number, count: number }> = {}
+        const statsMap: Record<string, { wykonanie: number, count: number }> = {}
 
-        transactions.forEach(t => {
-            if (!statsMap[t.agent]) {
-                statsMap[t.agent] = { totalComm: 0, count: 0 }
-            }
-            statsMap[t.agent].totalComm += t.prowizjaNetto
-            statsMap[t.agent].count += 1
-        })
+        if (getEffectiveTranches && dateRange) {
+            const tranches = getEffectiveTranches(transactions, dateRange.startMonth, dateRange.endMonth, dateRange.year)
+            const txIds = new Set<string>()
+            tranches.forEach(et => {
+                if (!statsMap[et.transaction.agent]) {
+                    statsMap[et.transaction.agent] = { wykonanie: 0, count: 0 }
+                }
+                statsMap[et.transaction.agent].wykonanie += et.wykonanie
+                if (!txIds.has(et.transactionId)) {
+                    txIds.add(et.transactionId)
+                    statsMap[et.transaction.agent].count += 1
+                }
+            })
+        } else {
+            transactions.forEach(t => {
+                if (!statsMap[t.agent]) {
+                    statsMap[t.agent] = { wykonanie: 0, count: 0 }
+                }
+                statsMap[t.agent].wykonanie += (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
+                statsMap[t.agent].count += 1
+            })
+        }
 
         return agents.map(agent => ({
             ...agent,
-            totalComm: statsMap[agent.name]?.totalComm || 0,
+            totalComm: statsMap[agent.name]?.wykonanie || 0,
             count: statsMap[agent.name]?.count || 0
         }))
             .filter(a => (selectedBranch === 'all' || a.oddzial === selectedBranch))
             .filter(a => a.name.toLowerCase().includes(searchTerm.toLowerCase()))
             .sort((a, b) => b.totalComm - a.totalComm)
-    }, [transactions, agents, searchTerm, selectedBranch])
+    }, [transactions, agents, searchTerm, selectedBranch, getEffectiveTranches, dateRange])
 
     const formatCurrency = (val: number) =>
         val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -41,10 +61,12 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Baza Agentów</h2>
-                <button className="btn btn-primary" onClick={onAddAgent}>
-                    <UserPlus size={18} style={{ marginRight: '0.5rem' }} />
-                    Dodaj Agenta
-                </button>
+                {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
+                    <button className="btn btn-primary" onClick={onAddAgent}>
+                        <UserPlus size={18} style={{ marginRight: '0.5rem' }} />
+                        Dodaj Agenta
+                    </button>
+                )}
             </div>
 
             <div className="glass-card" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', padding: '1.5rem 2rem', flexWrap: 'wrap' }}>
@@ -59,11 +81,11 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: window.innerWidth <= 768 ? '100%' : 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: windowWidth <= 768 ? '100%' : 'auto' }}>
                     <Filter size={18} style={{ color: 'var(--text-muted)' }} />
                     <select
                         className="input-field"
-                        style={{ width: window.innerWidth <= 768 ? '100%' : '200px', margin: 0 }}
+                        style={{ width: windowWidth <= 768 ? '100%' : '200px', margin: 0 }}
                         value={selectedBranch}
                         onChange={e => setSelectedBranch(e.target.value)}
                     >
@@ -83,8 +105,10 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                             <th style={{ padding: '1.5rem 2rem', fontWeight: 600 }}>Agent</th>
                             <th style={{ padding: '1.5rem 2rem', fontWeight: 600 }}>Oddział</th>
                             <th style={{ padding: '1.5rem 2rem', fontWeight: 600 }}>Status</th>
-                            <th style={{ padding: '1.5rem 2rem', fontWeight: 600, textAlign: 'right' }}>Suma Prowizji</th>
-                            <th style={{ padding: '1.5rem 2rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
+                            <th style={{ padding: '1.5rem 2rem', fontWeight: 600, textAlign: 'right' }}>Wykonanie</th>
+                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
+                                <th style={{ padding: '1.5rem 2rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -135,20 +159,22 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus }: Agents
                                 <td style={{ padding: '1.5rem 2rem', textAlign: 'right', fontWeight: 700, color: agent.status === 'aktywny' ? 'var(--accent-green)' : 'var(--text-muted)' }}>
                                     {formatCurrency(agent.totalComm)} zł
                                 </td>
-                                <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
-                                    <button
-                                        onClick={() => onToggleStatus(agent.id)}
-                                        className="btn"
-                                        title={agent.status === 'aktywny' ? 'Deaktywuj' : 'Aktywuj'}
-                                        style={{
-                                            padding: '0.5rem',
-                                            background: 'transparent',
-                                            color: agent.status === 'aktywny' ? 'var(--accent-pink)' : 'var(--accent-green)'
-                                        }}
-                                    >
-                                        {agent.status === 'aktywny' ? <PowerOff size={18} /> : <Power size={18} />}
-                                    </button>
-                                </td>
+                                {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
+                                    <td style={{ padding: '1.5rem 2rem', textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => onToggleStatus(agent.id)}
+                                            className="btn"
+                                            title={agent.status === 'aktywny' ? 'Deaktywuj' : 'Aktywuj'}
+                                            style={{
+                                                padding: '0.5rem',
+                                                background: 'transparent',
+                                                color: agent.status === 'aktywny' ? 'var(--accent-pink)' : 'var(--accent-green)'
+                                            }}
+                                        >
+                                            {agent.status === 'aktywny' ? <PowerOff size={18} /> : <Power size={18} />}
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>

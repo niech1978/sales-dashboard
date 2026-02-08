@@ -1,31 +1,56 @@
 import { useMemo } from 'react'
 import { Wallet, TrendingUp, Briefcase, Users } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import type { Transaction } from '../types'
+import type { Transaction, EffectiveTranche } from '../types'
 
 interface SummaryViewProps {
-    transactions: Transaction[] // filtered
-    allTransactions: Transaction[] // all from DB
+    transactions: Transaction[] // filtered by date range + active agents
+    allDbTransactions: Transaction[] // all from DB (for previous period comparison)
     dateRange: { startMonth: number, endMonth: number, year: number }
+    getEffectiveTranches?: (txs: Transaction[], startMonth: number, endMonth: number, year: number) => EffectiveTranche[]
 }
 
-const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewProps) => {
+const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveTranches }: SummaryViewProps) => {
     const stats = useMemo(() => {
-        // Helper to calculate wykonanie (prowizja - koszty + kredyt)
-        const calcWykonanie = (t: Transaction) => {
-            const prowizja = t.prowizjaNetto || 0
-            const koszty = t.koszty || 0
-            const kredyt = t.kredyt || 0
-            return prowizja - koszty + kredyt
+        // Use tranches if available
+        const effectiveTranches = getEffectiveTranches
+            ? getEffectiveTranches(transactions, dateRange.startMonth, dateRange.endMonth, dateRange.year)
+            : null
+
+        // Transaction-based stats (totalSales, transactionCount stay transaction-based)
+        const totalSales = transactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
+        const transactionCount = transactions.length
+
+        let totalWykonanie: number
+        let totalCommission: number
+        let totalKoszty: number
+        let totalKredyt: number
+        let zrealizowane: number
+        let prognozaWazona: number
+
+        if (effectiveTranches) {
+            // Tranche-based
+            totalCommission = effectiveTranches.reduce((acc, et) => acc + et.kwota, 0)
+            totalKoszty = effectiveTranches.reduce((acc, et) => acc + et.kosztyProporcjonalne, 0)
+            totalKredyt = effectiveTranches.reduce((acc, et) => acc + et.kredytProporcjonalny, 0)
+            totalWykonanie = effectiveTranches.reduce((acc, et) => acc + et.wykonanie, 0)
+            zrealizowane = effectiveTranches
+                .filter(et => et.status === 'zrealizowana')
+                .reduce((acc, et) => acc + et.wykonanie, 0)
+            prognozaWazona = effectiveTranches
+                .filter(et => et.status === 'prognoza')
+                .reduce((acc, et) => acc + et.wykonanie, 0)
+        } else {
+            // Fallback: transaction-based
+            const calcWykonanie = (t: Transaction) => (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
+            totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
+            totalKoszty = transactions.reduce((acc, curr) => acc + (curr.koszty || 0), 0)
+            totalKredyt = transactions.reduce((acc, curr) => acc + (curr.kredyt || 0), 0)
+            totalWykonanie = transactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
+            zrealizowane = totalWykonanie
+            prognozaWazona = 0
         }
 
-        // Current period stats
-        const totalSales = transactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
-        const totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
-        const totalWykonanie = transactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
-        const totalKoszty = transactions.reduce((acc, curr) => acc + (curr.koszty || 0), 0)
-        const totalKredyt = transactions.reduce((acc, curr) => acc + (curr.kredyt || 0), 0)
-        const transactionCount = transactions.length
         const avgCommission = totalWykonanie / (transactionCount || 1)
         const avgCommissionPct = totalSales > 0 ? (totalCommission / totalSales) * 100 : 0
 
@@ -38,17 +63,26 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
         if (prevStartMonth < 1) {
             prevYear -= 1;
             prevStartMonth += 12;
+        }
+        if (prevEndMonth < 1) {
             prevEndMonth += 12;
         }
 
-        const prevPeriodTransactions = allTransactions.filter(t =>
+        const prevPeriodTransactions = allDbTransactions.filter(t =>
             t.rok === prevYear &&
             t.miesiac >= prevStartMonth &&
             t.miesiac <= prevEndMonth
         );
 
+        let prevWykonanie: number
+        if (getEffectiveTranches) {
+            const prevTranches = getEffectiveTranches(prevPeriodTransactions, prevStartMonth, prevEndMonth, prevYear)
+            prevWykonanie = prevTranches.reduce((acc, et) => acc + et.wykonanie, 0)
+        } else {
+            prevWykonanie = prevPeriodTransactions.reduce((acc, curr) => acc + (curr.prowizjaNetto || 0) - (curr.koszty || 0) + (curr.kredyt || 0), 0)
+        }
+
         const prevSales = prevPeriodTransactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
-        const prevWykonanie = prevPeriodTransactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
         const prevCount = prevPeriodTransactions.length
 
         const getTrend = (current: number, previous: number) => {
@@ -65,16 +99,29 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
         return {
             totalSales, totalCommission, totalWykonanie, totalKoszty, totalKredyt,
             transactionCount, avgCommission, avgCommissionPct,
+            zrealizowane, prognozaWazona,
             trends: {
                 sales: getTrend(totalSales, prevSales),
                 wykonanie: getTrend(totalWykonanie, prevWykonanie),
                 count: getCountTrend(transactionCount, prevCount)
             }
         }
-    }, [transactions, allTransactions, dateRange])
+    }, [transactions, allDbTransactions, dateRange, getEffectiveTranches])
 
     const branchData = useMemo(() => {
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+
+        if (getEffectiveTranches) {
+            return branches.map(name => {
+                const branchTxs = transactions.filter(t => t.oddzial === name)
+                const tranches = getEffectiveTranches(branchTxs, dateRange.startMonth, dateRange.endMonth, dateRange.year)
+                return {
+                    name,
+                    value: tranches.reduce((acc, et) => acc + et.wykonanie, 0)
+                }
+            })
+        }
+
         return branches.map(name => ({
             name,
             value: transactions.filter(t => t.oddzial === name).reduce((acc, curr) => {
@@ -84,7 +131,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                 return acc + (prowizja - koszty + kredyt)
             }, 0)
         }))
-    }, [transactions])
+    }, [transactions, dateRange, getEffectiveTranches])
 
     const formatCurrency = (val: number | undefined) => {
         if (val === undefined) return '0.00'
@@ -107,6 +154,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                     trend={stats.trends.wykonanie}
                     icon={<TrendingUp size={20} color="var(--accent-pink)" />}
                     trendLabel="prowizja - koszty + kredyt"
+                    subtitle={stats.prognozaWazona > 0 ? `Zrealiz.: ${formatCurrency(stats.zrealizowane)} / Prognoza: ${formatCurrency(stats.prognozaWazona)}` : undefined}
                 />
                 <StatCard
                     title="Liczba Transakcji"
@@ -176,7 +224,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
                     <h3 style={{ marginBottom: '2rem' }}>Ostatnie Transakcje</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         {transactions.length > 0 ? (
-                            transactions.slice(-5).reverse().map((t, i) => {
+                            transactions.slice(0, 5).map((t, i) => {
                                 const initials = t.agent
                                     ? t.agent.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').toUpperCase()
                                     : '?';
@@ -213,7 +261,7 @@ const SummaryView = ({ transactions, allTransactions, dateRange }: SummaryViewPr
     )
 }
 
-const StatCard = ({ title, value, trend, icon, trendLabel = 'vs ostatni miesiąc' }: { title: string, value: string, trend: string, icon: React.ReactNode, trendLabel?: string }) => (
+const StatCard = ({ title, value, trend, icon, trendLabel = 'vs ostatni miesiąc', subtitle }: { title: string, value: string, trend: string, icon: React.ReactNode, trendLabel?: string, subtitle?: string }) => (
     <div className="glass-card" style={{ position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', opacity: 0.8 }}>
             {icon}
@@ -233,6 +281,9 @@ const StatCard = ({ title, value, trend, icon, trendLabel = 'vs ostatni miesiąc
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{trendLabel}</span>
         </div>
+        {subtitle && (
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>{subtitle}</p>
+        )}
     </div>
 )
 

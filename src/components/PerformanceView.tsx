@@ -294,6 +294,7 @@ interface PerformanceViewProps {
     agents?: { name: string; oddzial: string }[]
     userRole?: string
     transactions?: import('../types').Transaction[]
+    tranchesByTransaction?: Map<string, import('../types').TransactionTranche[]>
 }
 
 const MONTHS_SHORT = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
@@ -551,7 +552,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
     )
 }
 
-const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent', transactions = [] }: PerformanceViewProps) => {
+const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent', transactions = [], tranchesByTransaction }: PerformanceViewProps) => {
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
     const [isEditingTargets, setIsEditingTargets] = useState(false)
@@ -566,7 +567,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
         monthlyTargetsData,
         loading,
         refreshData
-    } = usePerformanceData(selectedYear, transactions)
+    } = usePerformanceData(selectedYear, transactions, tranchesByTransaction)
 
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
 

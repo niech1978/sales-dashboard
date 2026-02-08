@@ -1,19 +1,24 @@
 import { useMemo, useState } from 'react'
-import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, CreditCard, DollarSign } from 'lucide-react'
-import type { Transaction, Agent } from '../types'
+import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, CreditCard, DollarSign, Scissors } from 'lucide-react'
+import type { Transaction, Agent, TransactionTranche } from '../types'
+import TrancheEditor from './TrancheEditor'
 
 interface DatabaseViewProps {
     transactions: Transaction[]
     onDelete: (id: string) => void
     onUpdate: (transaction: Transaction) => void
     agents: Agent[]
+    tranchesByTransaction?: Map<string, TransactionTranche[]>
+    onSaveTranches?: (transactionId: string, tranches: Omit<TransactionTranche, 'id' | 'transaction_id' | 'created_at' | 'updated_at'>[]) => Promise<string | null>
+    userRole?: string
 }
 
-const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseViewProps) => {
+const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTransaction, onSaveTranches, userRole = 'agent' }: DatabaseViewProps) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedBranch, setSelectedBranch] = useState('all')
     const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction, direction: 'asc' | 'desc' } | null>(null)
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+    const [trancheTransaction, setTrancheTransaction] = useState<Transaction | null>(null)
 
     const sortedData = useMemo(() => {
         const filtered = transactions.filter(t =>
@@ -101,7 +106,9 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseView
                             <SortableHeader label="Kredyt" sortKey="kredyt" onSort={requestSort} textAlign="right" />
                             <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Wykonanie</th>
                             <SortableHeader label="Wartość" sortKey="wartoscNieruchomosci" onSort={requestSort} textAlign="right" />
-                            <th className="no-print" style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
+                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
+                                <th className="no-print" style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -147,8 +154,43 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseView
                                     <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>
                                         {t.wartoscNieruchomosci.toLocaleString()}
                                     </td>
+                                    {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
                                     <td className="no-print" style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '0.15rem', justifyContent: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.15rem', justifyContent: 'center', alignItems: 'center' }}>
+                                            {onSaveTranches && (
+                                                <button
+                                                    onClick={() => setTrancheTransaction({ ...t })}
+                                                    className="btn"
+                                                    style={{
+                                                        padding: '0.3rem',
+                                                        background: 'transparent',
+                                                        color: (t.id && tranchesByTransaction?.has(t.id)) ? 'var(--accent-green)' : 'var(--text-muted)',
+                                                        position: 'relative'
+                                                    }}
+                                                    title="Transze"
+                                                >
+                                                    <Scissors size={14} />
+                                                    {t.id && tranchesByTransaction?.has(t.id) && (
+                                                        <span style={{
+                                                            position: 'absolute',
+                                                            top: '-4px',
+                                                            right: '-4px',
+                                                            background: 'var(--accent-green)',
+                                                            color: '#fff',
+                                                            borderRadius: '50%',
+                                                            width: '14px',
+                                                            height: '14px',
+                                                            fontSize: '0.6rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontWeight: 700
+                                                        }}>
+                                                            {tranchesByTransaction.get(t.id)!.length}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setEditingTransaction({ ...t })}
                                                 className="btn"
@@ -171,6 +213,7 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseView
                                             </button>
                                         </div>
                                     </td>
+                                    )}
                                 </tr>
                             )
                         })}
@@ -183,11 +226,22 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseView
                 <EditTransactionModal
                     transaction={editingTransaction}
                     agents={agents}
+                    hasTranches={!!(editingTransaction.id && tranchesByTransaction?.has(editingTransaction.id))}
                     onSave={(updated) => {
                         onUpdate(updated)
                         setEditingTransaction(null)
                     }}
                     onClose={() => setEditingTransaction(null)}
+                />
+            )}
+
+            {/* Modal transz */}
+            {trancheTransaction && trancheTransaction.id && onSaveTranches && (
+                <TrancheEditor
+                    transaction={trancheTransaction}
+                    tranches={tranchesByTransaction?.get(trancheTransaction.id!) || []}
+                    onSave={onSaveTranches}
+                    onClose={() => setTrancheTransaction(null)}
                 />
             )}
         </div>
@@ -198,11 +252,13 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents }: DatabaseView
 const EditTransactionModal = ({
     transaction,
     agents,
+    hasTranches,
     onSave,
     onClose
 }: {
     transaction: Transaction
     agents: Agent[]
+    hasTranches?: boolean
     onSave: (t: Transaction) => void
     onClose: () => void
 }) => {
@@ -233,12 +289,30 @@ const EditTransactionModal = ({
                     <X size={24} />
                 </button>
 
-                <h2 className="modal-title" style={{ fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h2 className="modal-title" style={{ fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ background: 'var(--primary)', padding: '0.4rem', borderRadius: '8px', display: 'flex' }}>
                         <Edit2 size={20} color="white" />
                     </div>
                     Edytuj Transakcję
                 </h2>
+
+                {hasTranches && (
+                    <div style={{
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        borderRadius: '8px',
+                        padding: '0.75rem 1rem',
+                        marginBottom: '1.5rem',
+                        fontSize: '0.8125rem',
+                        color: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        <Scissors size={16} />
+                        Ta transakcja ma transze. Zmiana prowizji netto tutaj nie zaktualizuje transz automatycznie.
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

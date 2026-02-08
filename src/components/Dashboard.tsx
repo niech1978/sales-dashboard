@@ -4,6 +4,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy, Shield } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useData } from '../hooks/useData'
+import { useWindowWidth } from '../hooks/useWindowWidth'
 import DataEntry from './DataEntry'
 import AgentEntry from './AgentEntry'
 import SummaryView from './SummaryView'
@@ -36,7 +37,10 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         loading,
         error,
         transactions,
-        refreshData
+        refreshData,
+        tranchesByTransaction,
+        getEffectiveTranches,
+        saveTranches
     } = useData()
 
     const [activeTab, setActiveTab] = useState<TabType>('summary')
@@ -46,6 +50,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     const [userRole, setUserRole] = useState<string>('agent')
     const [userOddzial, setUserOddzial] = useState<string | null>(null)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const windowWidth = useWindowWidth()
 
     useEffect(() => {
         const getUserProfile = async () => {
@@ -95,26 +100,45 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             case 'summary': return (
                 <SummaryView
                     transactions={allTransactions}
-                    allTransactions={transactions}
+                    allDbTransactions={transactions}
+                    dateRange={dateRange}
+                    getEffectiveTranches={getEffectiveTranches}
+                />
+            )
+            case 'branches': return (
+                <BranchesView
+                    transactions={allTransactions}
+                    getEffectiveTranches={getEffectiveTranches}
                     dateRange={dateRange}
                 />
             )
-            case 'branches': return <BranchesView transactions={allTransactions} />
             case 'agents': return (
                 <AgentsView
                     transactions={allTransactions}
                     agents={allAgents}
                     onAddAgent={() => setIsAddingAgent(true)}
                     onToggleStatus={toggleAgentStatus}
+                    getEffectiveTranches={getEffectiveTranches}
+                    dateRange={dateRange}
+                    userRole={userRole}
                 />
             )
-            case 'reports': return <ReportsView transactions={allTransactions} />
+            case 'reports': return (
+                <ReportsView
+                    transactions={allTransactions}
+                    getEffectiveTranches={getEffectiveTranches}
+                    dateRange={dateRange}
+                />
+            )
             case 'database': return (
                 <DatabaseView
                     transactions={unfilteredTransactions.filter(t => t.rok === dateRange.year)}
                     onDelete={deleteTransaction}
                     onUpdate={updateTransaction}
                     agents={allAgents}
+                    tranchesByTransaction={tranchesByTransaction}
+                    onSaveTranches={saveTranches}
+                    userRole={userRole}
                 />
             )
             case 'performance': return (
@@ -122,14 +146,16 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     agents={allAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
                     userRole={userRole}
                     transactions={transactions}
+                    tranchesByTransaction={tranchesByTransaction}
                 />
             )
             case 'users': return <UserManagement />
             default: return (
                 <SummaryView
                     transactions={allTransactions}
-                    allTransactions={transactions}
+                    allDbTransactions={transactions}
                     dateRange={dateRange}
+                    getEffectiveTranches={getEffectiveTranches}
                 />
             )
         }
@@ -157,7 +183,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
     return (
         <div style={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
             <AnimatePresence>
-                {(isMobileMenuOpen || window.innerWidth > 1024) && (
+                {(isMobileMenuOpen || windowWidth > 1024) && (
                     <aside
                         className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
                     >
@@ -397,9 +423,9 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     </div>
 
                     {activeTab !== 'performance' && activeTab !== 'users' && (
-                        <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem' }}>
+                        <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                             <Filter size={18} color="var(--primary)" />
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <select
                                     className="input-field"
                                     style={{ margin: 0, padding: '0.5rem', width: '100px', fontWeight: 700, borderColor: 'var(--primary)' }}

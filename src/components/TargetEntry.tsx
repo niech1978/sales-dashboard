@@ -51,10 +51,12 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
         setError(null)
 
         const toUpsert: Partial<BranchTarget>[] = []
+        const toDelete: { oddzial: string, miesiac: number }[] = []
 
         BRANCHES.forEach(branch => {
             for (let m = 1; m <= 12; m++) {
                 const plan = targets[branch]?.[m] || 0
+                const hadExisting = existingTargets.some(t => t.oddzial === branch && t.miesiac === m && (t.plan_kwota || 0) > 0)
                 if (plan > 0) {
                     toUpsert.push({
                         oddzial: branch,
@@ -63,6 +65,8 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                         plan_kwota: plan,
                         wykonanie_kwota: 0 // Wykonanie jest obliczane z transakcji
                     })
+                } else if (hadExisting) {
+                    toDelete.push({ oddzial: branch, miesiac: m })
                 }
             }
         })
@@ -79,6 +83,16 @@ const TargetEntry = ({ year, existingTargets, onSave, onClose }: TargetEntryProp
                 setLoading(false)
                 return
             }
+        }
+
+        // Delete plans that were cleared (set to 0)
+        for (const del of toDelete) {
+            await supabase
+                .from('branch_targets')
+                .delete()
+                .eq('oddzial', del.oddzial)
+                .eq('rok', year)
+                .eq('miesiac', del.miesiac)
         }
 
         setLoading(false)

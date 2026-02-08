@@ -303,7 +303,7 @@ const PerformanceEntry = ({ agents, year, onAdd, onClose }: PerformanceEntryProp
                         <button
                             type="submit"
                             className="btn btn-primary"
-                            disabled={loading || !formData.agent_name}
+                            disabled={loading || !formData.agent_name || formData.agent_name === '__new__'}
                         >
                             {loading ? 'Zapisywanie...' : 'Zapisz'}
                         </button>

@@ -1,23 +1,94 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import type { AgentPerformance, BranchTarget, Transaction } from '../types'
+import type { AgentPerformance, BranchTarget, Transaction, TransactionTranche } from '../types'
 
 interface BranchTargetWithWykonanie extends Omit<BranchTarget, 'wykonanie_kwota'> {
     plan_kwota: number
     wykonanie_kwota: number // calculated from transactions
 }
 
-export function usePerformanceData(year: number = 2026, transactions: Transaction[] = []) {
+// Helper: calculate wykonanie for a transaction or its tranches within a given month
+function calcWykonanieForMonth(
+    tx: Transaction,
+    month: number,
+    year: number,
+    txTranches: TransactionTranche[] | undefined
+): number {
+    if (!txTranches || txTranches.length === 0) {
+        // No tranches: all wykonanie in the transaction's own month
+        if (tx.miesiac === month && tx.rok === year) {
+            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+        }
+        return 0
+    }
+
+    // Has tranches: sum wykonanie of tranches in this month
+    const prowizjaNetto = tx.prowizjaNetto || 0
+    const koszty = tx.koszty || 0
+    const kredyt = tx.kredyt || 0
+
+    return txTranches
+        .filter(tr => tr.miesiac === month && tr.rok === year)
+        .reduce((sum, tr) => {
+            const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
+            const kosztyProp = koszty * udzial
+            const kredytProp = kredyt * udzial
+            const isZrealizowana = tr.status === 'zrealizowana'
+            const prob = isZrealizowana ? 100 : tr.prawdopodobienstwo
+
+            if (isZrealizowana) {
+                return sum + (tr.kwota - kosztyProp + kredytProp)
+            } else {
+                return sum + (tr.kwota - kosztyProp + kredytProp) * prob / 100
+            }
+        }, 0)
+}
+
+// Helper: calculate total year wykonanie for a transaction
+function calcTotalWykonanie(
+    tx: Transaction,
+    year: number,
+    txTranches: TransactionTranche[] | undefined
+): number {
+    if (!txTranches || txTranches.length === 0) {
+        if (tx.rok === year) {
+            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+        }
+        return 0
+    }
+
+    const prowizjaNetto = tx.prowizjaNetto || 0
+    const koszty = tx.koszty || 0
+    const kredyt = tx.kredyt || 0
+
+    return txTranches
+        .filter(tr => tr.rok === year)
+        .reduce((sum, tr) => {
+            const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
+            const kosztyProp = koszty * udzial
+            const kredytProp = kredyt * udzial
+            const isZrealizowana = tr.status === 'zrealizowana'
+            const prob = isZrealizowana ? 100 : tr.prawdopodobienstwo
+
+            if (isZrealizowana) {
+                return sum + (tr.kwota - kosztyProp + kredytProp)
+            } else {
+                return sum + (tr.kwota - kosztyProp + kredytProp) * prob / 100
+            }
+        }, 0)
+}
+
+export function usePerformanceData(
+    year: number = 2026,
+    transactions: Transaction[] = [],
+    tranchesByTransaction?: Map<string, TransactionTranche[]>
+) {
     const [agentPerformance, setAgentPerformance] = useState<AgentPerformance[]>([])
     const [branchTargetsFromDb, setBranchTargetsFromDb] = useState<BranchTarget[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        fetchData()
-    }, [year])
-
-    async function fetchData() {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true)
             setError(null)
@@ -52,7 +123,11 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
         } finally {
             setLoading(false)
         }
-    }
+    }, [year])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     // Filter transactions for the selected year
     const yearTransactions = useMemo(() => {
@@ -70,15 +145,11 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
                 const dbTarget = branchTargetsFromDb.find(t => t.oddzial === branch && t.miesiac === month)
                 const plan = dbTarget?.plan_kwota || 0
 
-                // Calculate wykonanie from transactions (prowizja - koszty + kredyt)
-                const monthTransactions = yearTransactions.filter(
-                    t => t.oddzial === branch && t.miesiac === month
-                )
+                // Calculate wykonanie from transactions (with tranche support)
+                const monthTransactions = yearTransactions.filter(t => t.oddzial === branch)
                 const wykonanie = monthTransactions.reduce((sum, t) => {
-                    const prowizja = t.prowizjaNetto || 0
-                    const koszty = t.koszty || 0
-                    const kredyt = t.kredyt || 0
-                    return sum + (prowizja - koszty + kredyt)
+                    const txTranches = t.id ? tranchesByTransaction?.get(t.id) : undefined
+                    return sum + calcWykonanieForMonth(t, month, year, txTranches)
                 }, 0)
 
                 // Only include if there's a plan or wykonanie
@@ -96,22 +167,19 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
         })
 
         return result
-    }, [branchTargetsFromDb, yearTransactions, year])
+    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction])
 
     // Calculate wykonanie (prowizja - koszty + kredyt) from transactions for each agent
-    // Also include agents from transactions who don't have a performance record yet
     const agentPerformanceWithProwizja = useMemo(() => {
         // Get all unique agents from transactions with their branch
         const agentsFromTransactions = new Map<string, { name: string; oddzial: string; prowizja: number }>()
 
         yearTransactions.forEach(t => {
             if (t.agent) {
-                const prowizja = t.prowizjaNetto || 0
-                const koszty = t.koszty || 0
-                const kredyt = t.kredyt || 0
-                const wykonanie = prowizja - koszty + kredyt
+                const txTranches = t.id ? tranchesByTransaction?.get(t.id) : undefined
+                const wykonanie = calcTotalWykonanie(t, year, txTranches)
 
-                if (wykonanie > 0 || prowizja > 0) {
+                if (wykonanie > 0 || (t.prowizjaNetto || 0) > 0) {
                     const existing = agentsFromTransactions.get(t.agent)
                     if (existing) {
                         existing.prowizja += wykonanie
@@ -158,37 +226,23 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
         }))
 
         return [...updatedPerformance, ...newAgentsFromTransactions]
-    }, [agentPerformance, yearTransactions, year])
+    }, [agentPerformance, yearTransactions, year, tranchesByTransaction])
 
-    // Aggregate stats by branch - use full agent list including those from transactions
+    // Aggregate stats by branch
     const branchPerformance = useMemo(() => {
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
         return branches.map(branch => {
-            // Use the merged agent list (including agents from transactions)
             const agents = agentPerformanceWithProwizja.filter(a => a.oddzial === branch)
             const targets = branchTargets.filter(t => t.oddzial === branch)
 
-            // Wykonanie from transactions (prowizja - koszty + kredyt)
-            const branchTransactions = yearTransactions.filter(t => t.oddzial === branch)
-            const totalProwizja = branchTransactions.reduce((sum, t) => {
-                const prowizja = t.prowizjaNetto || 0
-                const koszty = t.koszty || 0
-                const kredyt = t.kredyt || 0
-                return sum + (prowizja - koszty + kredyt)
-            }, 0)
+            const totalProwizja = agents.reduce((sum, a) => sum + (a.prowizja_netto_kredyt || 0), 0)
             const totalSpotkania = agents.reduce((sum, a) => sum + (a.spotkania_pozyskowe || 0), 0)
             const totalUmowy = agents.reduce((sum, a) => sum + (a.nowe_umowy || 0), 0)
             const totalPrezentacje = agents.reduce((sum, a) => sum + (a.prezentacje || 0), 0)
             const totalNieruchomosci = agents.reduce((sum, a) => sum + (a.suma_nieruchomosci || 0), 0)
 
             const planTotal = targets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
-            // Wykonanie teraz z transakcji (prowizja - koszty + kredyt)
-            const wykonanieTotal = branchTransactions.reduce((sum, t) => {
-                const prowizja = t.prowizjaNetto || 0
-                const koszty = t.koszty || 0
-                const kredyt = t.kredyt || 0
-                return sum + (prowizja - koszty + kredyt)
-            }, 0)
+            const wykonanieTotal = targets.reduce((sum, t) => sum + (t.wykonanie_kwota || 0), 0)
 
             return {
                 oddzial: branch,
@@ -203,7 +257,7 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
                 wykonaniePercent: planTotal > 0 ? (wykonanieTotal / planTotal) * 100 : 0
             }
         })
-    }, [agentPerformanceWithProwizja, branchTargets, yearTransactions])
+    }, [agentPerformanceWithProwizja, branchTargets])
 
     // Top agents across all branches
     const topAgents = useMemo(() => {
@@ -212,7 +266,7 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
             .slice(0, 10)
     }, [agentPerformanceWithProwizja])
 
-    // Monthly targets chart data - wykonanie from transactions (prowizja - koszty + kredyt)
+    // Monthly targets chart data
     const monthlyTargetsData = useMemo(() => {
         const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
         return months.map((name, index) => {
@@ -220,19 +274,15 @@ export function usePerformanceData(year: number = 2026, transactions: Transactio
             const monthTargets = branchTargetsFromDb.filter(t => t.miesiac === month)
             const plan = monthTargets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
 
-            // Wykonanie from transactions (prowizja - koszty + kredyt)
-            const wykonanie = yearTransactions
-                .filter(t => t.miesiac === month)
-                .reduce((sum, t) => {
-                    const prowizja = t.prowizjaNetto || 0
-                    const koszty = t.koszty || 0
-                    const kredyt = t.kredyt || 0
-                    return sum + (prowizja - koszty + kredyt)
-                }, 0)
+            // Wykonanie from transactions (with tranche support)
+            const wykonanie = yearTransactions.reduce((sum, t) => {
+                const txTranches = t.id ? tranchesByTransaction?.get(t.id) : undefined
+                return sum + calcWykonanieForMonth(t, month, year, txTranches)
+            }, 0)
 
             return { name, plan, wykonanie }
         })
-    }, [branchTargetsFromDb, yearTransactions])
+    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction])
 
     return {
         agentPerformance: agentPerformanceWithProwizja, // prowizja from transactions

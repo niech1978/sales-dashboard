@@ -56,6 +56,37 @@ export interface AgentPerformance {
     suma_nieruchomosci: number;
 }
 
+export interface TransactionTranche {
+    id?: string;
+    transaction_id: string;
+    miesiac: number;
+    rok: number;
+    kwota: number;
+    status: 'zrealizowana' | 'prognoza';
+    prawdopodobienstwo: number;
+    notatka?: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface EffectiveTranche {
+    transactionId: string;
+    transaction: Transaction;
+    miesiac: number;
+    rok: number;
+    kwota: number;
+    status: 'zrealizowana' | 'prognoza';
+    prawdopodobienstwo: number;
+    kwotaZrealizowana: number;      // kwota jesli zrealizowana, 0 jesli prognoza
+    kwotaPrognozaWazona: number;    // kwota * prawdopodobienstwo/100 (0 jesli zrealizowana)
+    kwotaPrognozaPelna: number;     // kwota jesli prognoza, 0 jesli zrealizowana
+    // Proporcjonalny rozklad kosztow/kredytu
+    udzial: number;                 // kwota / prowizjaNetto
+    kosztyProporcjonalne: number;
+    kredytProporcjonalny: number;
+    wykonanie: number;              // kwota - kosztyProporcjonalne + kredytProporcjonalny (wazone prawdopodobienstwem dla prognoz)
+}
+
 export interface BranchTarget {
     id?: string;
     oddzial: string;

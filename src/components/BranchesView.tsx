@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { MapPin } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Sector, Cell } from 'recharts'
-import type { Transaction } from '../types'
+import type { Transaction, EffectiveTranche } from '../types'
 
 interface BranchesViewProps {
     transactions: Transaction[]
+    getEffectiveTranches?: (txs: Transaction[], startMonth: number, endMonth: number, year: number) => EffectiveTranche[]
+    dateRange?: { startMonth: number, endMonth: number, year: number }
 }
 
 const COLORS = ['#6366f1', '#ec4899', '#3b82f6'];
@@ -89,11 +91,28 @@ const createSectorRenderer = (activePieIndex: number, branchStats: any[]) => (pr
     );
 };
 
-const BranchesView = ({ transactions }: BranchesViewProps) => {
+const BranchesView = ({ transactions, getEffectiveTranches, dateRange }: BranchesViewProps) => {
     const [activePieIndex, setActivePieIndex] = useState(0);
 
     const branchStats = useMemo(() => {
         const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+
+        if (getEffectiveTranches && dateRange) {
+            return branches.map(name => {
+                const branchTxs = transactions.filter(t => t.oddzial === name)
+                const tranches = getEffectiveTranches(branchTxs, dateRange.startMonth, dateRange.endMonth, dateRange.year)
+
+                const wykonanie = tranches.reduce((acc, et) => acc + et.wykonanie, 0)
+                const commission = tranches.reduce((acc, et) => acc + et.kwota, 0)
+                const koszty = tranches.reduce((acc, et) => acc + et.kosztyProporcjonalne, 0)
+                const kredyt = tranches.reduce((acc, et) => acc + et.kredytProporcjonalny, 0)
+                const volume = branchTxs.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
+                const count = branchTxs.length
+
+                return { name, commission, wykonanie, koszty, kredyt, volume, count }
+            })
+        }
+
         return branches.map(name => {
             const branchTransactions = transactions.filter(t => t.oddzial === name)
             const commission = branchTransactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
@@ -104,7 +123,7 @@ const BranchesView = ({ transactions }: BranchesViewProps) => {
             const count = branchTransactions.length
             return { name, commission, wykonanie, koszty, kredyt, volume, count }
         })
-    }, [transactions])
+    }, [transactions, getEffectiveTranches, dateRange])
 
     // Prepare pie data with fills
     const pieData = useMemo(() => {
