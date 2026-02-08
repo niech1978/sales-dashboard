@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Mail, Lock, LogIn, AlertCircle, Loader2, TrendingUp } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Loader2, TrendingUp, Check } from 'lucide-react';
 
-export default function Auth() {
+interface AuthProps {
+    onPasswordUpdated?: () => void;
+}
+
+export default function Auth({ onPasswordUpdated }: AuthProps) {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -13,7 +18,6 @@ export default function Auth() {
 
     useEffect(() => {
         // Detect if we came from a recovery/invite link
-        // Supabase may use hash (#) or query params (?) depending on flow version
         const hash = window.location.hash;
         const search = window.location.search;
         const fullUrl = hash + search;
@@ -40,11 +44,30 @@ export default function Auth() {
 
         try {
             if (isUpdatingPassword) {
+                // Walidacja hasła
+                if (password.length < 6) {
+                    setError('Hasło musi mieć minimum 6 znaków');
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    setError('Hasła nie są identyczne');
+                    return;
+                }
+
                 const { error } = await supabase.auth.updateUser({ password });
                 if (error) throw error;
-                setMessage('Hasło zostało pomyślnie zmienione! Możesz się teraz zalogować.');
+
+                setMessage('Hasło zostało pomyślnie ustawione!');
                 setIsUpdatingPassword(false);
                 setIsForgotPassword(false);
+                setPassword('');
+                setConfirmPassword('');
+
+                // Wyloguj — użytkownik zaloguje się nowym hasłem
+                await supabase.auth.signOut();
+
+                // Powiadom App.tsx że recovery się zakończyło
+                onPasswordUpdated?.();
             } else if (isForgotPassword) {
                 const { error } = await supabase.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.origin,
@@ -60,13 +83,14 @@ export default function Auth() {
             }
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Wystąpił błąd';
-            // Translate common Supabase errors to Polish
             if (errorMessage.includes('Invalid login credentials')) {
                 setError('Nieprawidłowy email lub hasło');
             } else if (errorMessage.includes('Email not confirmed')) {
                 setError('Email nie został potwierdzony');
             } else if (errorMessage.includes('User not found')) {
                 setError('Użytkownik nie istnieje w systemie');
+            } else if (errorMessage.includes('should be different')) {
+                setError('Nowe hasło musi być inne niż poprzednie');
             } else {
                 setError(errorMessage);
             }
@@ -94,15 +118,17 @@ export default function Auth() {
                     <div style={{
                         width: '64px',
                         height: '64px',
-                        background: 'var(--primary)',
+                        background: isUpdatingPassword ? 'var(--accent-green)' : 'var(--primary)',
                         borderRadius: '16px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto 1.5rem',
-                        boxShadow: '0 12px 24px rgba(99, 102, 241, 0.3)'
+                        boxShadow: isUpdatingPassword
+                            ? '0 12px 24px rgba(16, 185, 129, 0.3)'
+                            : '0 12px 24px rgba(99, 102, 241, 0.3)'
                     }}>
-                        <TrendingUp size={32} color="white" />
+                        {isUpdatingPassword ? <Lock size={32} color="white" /> : <TrendingUp size={32} color="white" />}
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Freedom</h1>
                     <p style={{ color: 'var(--text-muted)' }}>
@@ -136,8 +162,12 @@ export default function Auth() {
                         borderRadius: '8px',
                         marginBottom: '1.5rem',
                         color: '#10b981',
-                        fontSize: '0.875rem'
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem'
                     }}>
+                        <Check size={18} />
                         {message}
                     </div>
                 )}
@@ -173,7 +203,7 @@ export default function Auth() {
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                 <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-                                    {isUpdatingPassword ? 'Nowe Hasło' : 'Hasło'}
+                                    {isUpdatingPassword ? 'Nowe hasło' : 'Hasło'}
                                 </label>
                                 {!isUpdatingPassword && (
                                     <button
@@ -200,7 +230,33 @@ export default function Auth() {
                                         borderRadius: '8px',
                                         color: 'white'
                                     }}
-                                    placeholder="••••••••"
+                                    placeholder={isUpdatingPassword ? 'Minimum 6 znaków' : '••••••••'}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {isUpdatingPassword && (
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+                                Potwierdź hasło
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <input
+                                    type="password"
+                                    required
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem 0.75rem 3rem',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        color: 'white'
+                                    }}
+                                    placeholder="Powtórz hasło"
                                 />
                             </div>
                         </div>
@@ -209,7 +265,7 @@ export default function Auth() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="btn"
+                        className="btn btn-primary"
                         style={{
                             width: '100%',
                             padding: '1rem',
@@ -223,7 +279,7 @@ export default function Auth() {
                     </button>
                 </form>
 
-                {(isForgotPassword || isUpdatingPassword) && (
+                {(isForgotPassword || isUpdatingPassword) && !message && (
                     <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                         <button
                             onClick={() => {
@@ -231,6 +287,8 @@ export default function Auth() {
                                 setIsUpdatingPassword(false);
                                 setError(null);
                                 setMessage(null);
+                                setPassword('');
+                                setConfirmPassword('');
                             }}
                             style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}
                         >

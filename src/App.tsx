@@ -7,6 +7,7 @@ import type { Session } from '@supabase/supabase-js'
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
     // Get initial session
@@ -16,12 +17,22 @@ function App() {
     })
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked recovery link — show password form, NOT dashboard
+        setIsPasswordRecovery(true)
+        setSession(session)
+      } else {
+        setSession(session)
+        if (event === 'SIGNED_IN' && isPasswordRecovery) {
+          // Password was updated, now allow dashboard
+          setIsPasswordRecovery(false)
+        }
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [isPasswordRecovery])
 
   if (loading) {
     return (
@@ -31,8 +42,8 @@ function App() {
     )
   }
 
-  if (!session) {
-    return <Auth />
+  if (!session || isPasswordRecovery) {
+    return <Auth onPasswordUpdated={() => setIsPasswordRecovery(false)} />
   }
 
   return (
