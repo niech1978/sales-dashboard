@@ -70,11 +70,17 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     setUserRole(appUser.role)
                     setUserOddzial(appUser.oddzial)
                 } else {
-                    // Brak wpisu w app_users = brak dostępu (agent bez oddziału)
-                    // Admin musi dodać użytkownika do tabeli app_users w Supabase
-                    console.warn('Użytkownik nie ma przypisanych uprawnień w tabeli app_users:', user.email)
-                    setUserRole('agent')
-                    setUserOddzial(null)
+                    // Konto nie jest powiązane — spróbuj połączyć automatycznie po emailu
+                    const { data: linkResult } = await supabase.rpc('link_my_account')
+
+                    if (linkResult?.success && (linkResult.linked || linkResult.already_linked)) {
+                        setUserRole(linkResult.role || 'agent')
+                        setUserOddzial(linkResult.oddzial || null)
+                    } else {
+                        console.warn('Użytkownik nie ma przypisanych uprawnień w tabeli app_users:', user.email)
+                        setUserRole('agent')
+                        setUserOddzial(null)
+                    }
                 }
             }
         }

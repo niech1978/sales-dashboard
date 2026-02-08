@@ -12,11 +12,24 @@ export default function Auth() {
     const [message, setMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        // Detect if we came from a recovery link
+        // Detect if we came from a recovery/invite link
+        // Supabase may use hash (#) or query params (?) depending on flow version
         const hash = window.location.hash;
-        if (hash && hash.includes('type=recovery')) {
+        const search = window.location.search;
+        const fullUrl = hash + search;
+
+        if (fullUrl.includes('type=recovery') || fullUrl.includes('type=invite')) {
             setIsUpdatingPassword(true);
         }
+
+        // Listen for PASSWORD_RECOVERY event from Supabase
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setIsUpdatingPassword(true);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const handleAuth = async (e: React.FormEvent) => {

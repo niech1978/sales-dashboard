@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { Users, UserPlus, Edit2, Trash2, Check, X, Shield, Building2, Mail, RefreshCw, AlertCircle, Save } from 'lucide-react'
+import { Users, UserPlus, Edit2, Trash2, Check, X, Shield, Building2, Mail, RefreshCw, AlertCircle, Save, Send, Loader2, Link } from 'lucide-react'
 
 interface AppUser {
     id: string
@@ -38,6 +38,9 @@ const UserManagement = () => {
     // Role dostępne do wyboru w formularzach (superadmin nie może być przypisany ręcznie)
     const assignableRoles = roles.filter(r => r.value !== 'superadmin')
 
+    const [invitingUser, setInvitingUser] = useState<string | null>(null)
+    const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
     const isSuperadmin = (user: AppUser) => user.role === 'superadmin'
 
     useEffect(() => {
@@ -73,9 +76,9 @@ const UserManagement = () => {
 
         try {
             setError(null)
+            setSuccessMessage(null)
 
-            // Sprawdź czy użytkownik istnieje w auth.users
-            // Jeśli nie, dodajemy bez auth_user_id (admin może później powiązać)
+            // 1. Dodaj do app_users (trigger auto_link_app_user spróbuje połączyć z auth.users)
             const { data, error } = await supabase
                 .from('app_users')
                 .insert({
@@ -83,17 +86,90 @@ const UserManagement = () => {
                     name: newUser.name || null,
                     role: newUser.role,
                     oddzial: newUser.oddzial || null,
-                    is_active: true,
-                    auth_user_id: null // Zostanie powiązane po rejestracji użytkownika
+                    is_active: true
                 })
                 .select()
                 .single()
 
             if (error) throw error
 
-            setUsers([data, ...users])
+            // 2. Jeśli konto auth nie istnieje — utwórz je i wyślij link do ustawienia hasła
+            if (!data.auth_user_id) {
+                const tempPassword = crypto.randomUUID() + 'Aa1!'
+                const { error: signUpError } = await supabase.auth.signUp({
+                    email: newUser.email,
+                    password: tempPassword
+                })
+
+                if (signUpError && !signUpError.message.includes('already registered')) {
+                    // Konto app_users dodane, ale auth się nie udało — nie blokujemy
+                    console.warn('Nie udało się utworzyć konta auth:', signUpError.message)
+                }
+
+                // Wyślij link do ustawienia hasła
+                await supabase.auth.resetPasswordForEmail(newUser.email, {
+                    redirectTo: window.location.origin
+                })
+
+                setSuccessMessage(`Użytkownik dodany! Link do ustawienia hasła wysłany na ${newUser.email}`)
+
+                // Odśwież listę (trigger mógł połączyć konto)
+                await fetchUsers()
+            } else {
+                setSuccessMessage(`Użytkownik dodany i automatycznie powiązany z istniejącym kontem`)
+                setUsers([data, ...users])
+            }
+
             setShowAddForm(false)
             setNewUser({ email: '', name: '', role: 'agent', oddzial: '' })
+        } catch (err: any) {
+            setError(err.message)
+        }
+    }
+
+    const handleInviteUser = async (user: AppUser) => {
+        setInvitingUser(user.id)
+        setError(null)
+        setSuccessMessage(null)
+
+        try {
+            if (!user.auth_user_id) {
+                // Utwórz konto auth jeśli nie istnieje
+                const tempPassword = crypto.randomUUID() + 'Aa1!'
+                const { error: signUpError } = await supabase.auth.signUp({
+                    email: user.email,
+                    password: tempPassword
+                })
+                if (signUpError && !signUpError.message.includes('already registered')) {
+                    throw signUpError
+                }
+            }
+
+            // Wyślij link do ustawienia/resetowania hasła
+            const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
+                redirectTo: window.location.origin
+            })
+            if (resetError) throw resetError
+
+            setSuccessMessage(`Link do ustawienia hasła wysłany na ${user.email}`)
+
+            // Odśwież listę (mogło się połączyć)
+            await fetchUsers()
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setInvitingUser(null)
+        }
+    }
+
+    const handleLinkAccount = async (_user: AppUser) => {
+        setError(null)
+        setSuccessMessage(null)
+
+        try {
+            // Odświeżamy listę — trigger przy loginie użytkownika połączy konto automatycznie
+            await fetchUsers()
+            setSuccessMessage('Lista odświeżona. Konto zostanie powiązane automatycznie przy następnym logowaniu użytkownika.')
         } catch (err: any) {
             setError(err.message)
         }
@@ -204,6 +280,23 @@ const UserManagement = () => {
                 </div>
             )}
 
+            {successMessage && (
+                <div className="glass-card" style={{
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'var(--accent-green)',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem'
+                }}>
+                    <Check color="var(--accent-green)" />
+                    <p style={{ color: 'var(--accent-green)' }}>{successMessage}</p>
+                    <button className="btn" style={{ marginLeft: 'auto', padding: '0.5rem 1rem' }} onClick={() => setSuccessMessage(null)}>
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
             {/* Header z przyciskiem dodawania */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -306,7 +399,7 @@ const UserManagement = () => {
                         </button>
                     </div>
                     <p style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        * Użytkownik musi się zarejestrować w aplikacji. Po rejestracji jego konto zostanie automatycznie powiązane z tym wpisem na podstawie adresu email.
+                        * Po dodaniu, użytkownik otrzyma email z linkiem do ustawienia hasła. Konto zostanie automatycznie powiązane.
                     </p>
                 </div>
             )}
@@ -470,17 +563,43 @@ const UserManagement = () => {
                                         </td>
                                         <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                                             {user.auth_user_id ? (
-                                                <span title="Użytkownik zarejestrowany">
+                                                <span title="Konto powiązane">
                                                     <Check size={18} color="var(--accent-green)" />
                                                 </span>
                                             ) : (
-                                                <span title="Oczekuje na rejestrację">
-                                                    <X size={18} color="var(--text-muted)" />
-                                                </span>
+                                                <button
+                                                    className="btn"
+                                                    style={{
+                                                        padding: '0.25rem 0.5rem',
+                                                        fontSize: '0.7rem',
+                                                        background: 'rgba(245, 158, 11, 0.2)',
+                                                        color: '#f59e0b'
+                                                    }}
+                                                    onClick={() => handleLinkAccount(user)}
+                                                    title="Spróbuj połączyć konto"
+                                                >
+                                                    <Link size={12} style={{ marginRight: '0.25rem' }} />
+                                                    Połącz
+                                                </button>
                                             )}
                                         </td>
                                         <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                {!user.auth_user_id && (
+                                                    <button
+                                                        className="btn"
+                                                        style={{
+                                                            padding: '0.5rem',
+                                                            color: 'var(--accent-blue)',
+                                                            opacity: invitingUser === user.id ? 0.5 : 1
+                                                        }}
+                                                        onClick={() => handleInviteUser(user)}
+                                                        disabled={invitingUser === user.id}
+                                                        title="Wyślij zaproszenie (link do ustawienia hasła)"
+                                                    >
+                                                        {invitingUser === user.id ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                                    </button>
+                                                )}
                                                 <button
                                                     className="btn"
                                                     style={{ padding: '0.5rem' }}
