@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, CreditCard, DollarSign, Scissors } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, CreditCard, DollarSign, Scissors, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Transaction, Agent, TransactionTranche } from '../types'
 import TrancheEditor from './TrancheEditor'
 
@@ -13,12 +13,20 @@ interface DatabaseViewProps {
     userRole?: string
 }
 
+const PAGE_SIZE = 50
+
 const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTransaction, onSaveTranches, userRole = 'agent' }: DatabaseViewProps) => {
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedBranch, setSelectedBranch] = useState('all')
     const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction, direction: 'asc' | 'desc' } | null>(null)
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
     const [trancheTransaction, setTrancheTransaction] = useState<Transaction | null>(null)
+    const [currentPage, setCurrentPage] = useState(1)
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, selectedBranch])
 
     const sortedData = useMemo(() => {
         const filtered = transactions.filter(t =>
@@ -39,6 +47,9 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
 
         return filtered
     }, [transactions, searchTerm, selectedBranch, sortConfig])
+
+    const totalPages = Math.max(1, Math.ceil(sortedData.length / PAGE_SIZE))
+    const paginatedData = sortedData.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
     const requestSort = (key: keyof Transaction) => {
         let direction: 'asc' | 'desc' = 'asc'
@@ -112,7 +123,7 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedData.map((t) => {
+                        {paginatedData.map((t) => {
                             const koszty = t.koszty || 0
                             const kredyt = t.kredyt || 0
                             const wykonanie = t.prowizjaNetto - koszty + kredyt
@@ -220,6 +231,47 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                     </tbody>
                 </table>
             </div>
+
+            {/* Paginacja */}
+            {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '0.5rem 0' }}>
+                    <button
+                        className="btn"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        style={{
+                            padding: '0.5rem 0.75rem',
+                            background: currentPage === 1 ? 'var(--bg-card)' : 'var(--bg-dark)',
+                            border: '1px solid var(--border)',
+                            opacity: currentPage === 1 ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                        }}
+                    >
+                        <ChevronLeft size={16} /> Poprzednia
+                    </button>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        Strona {currentPage} z {totalPages}
+                    </span>
+                    <button
+                        className="btn"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        style={{
+                            padding: '0.5rem 0.75rem',
+                            background: currentPage === totalPages ? 'var(--bg-card)' : 'var(--bg-dark)',
+                            border: '1px solid var(--border)',
+                            opacity: currentPage === totalPages ? 0.5 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                        }}
+                    >
+                        Następna <ChevronRight size={16} />
+                    </button>
+                </div>
+            )}
 
             {/* Modal edycji transakcji */}
             {editingTransaction && (

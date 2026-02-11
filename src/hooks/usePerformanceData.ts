@@ -4,7 +4,8 @@ import type { AgentPerformance, BranchTarget, Transaction, TransactionTranche } 
 
 interface BranchTargetWithWykonanie extends Omit<BranchTarget, 'wykonanie_kwota'> {
     plan_kwota: number
-    wykonanie_kwota: number // calculated from transactions
+    wykonanie_kwota: number // only realized (zrealizowana) transactions
+    prognoza_kwota: number  // realized + weighted forecast (non-realized tranches * probability)
 }
 
 // Helper: calculate wykonanie for a transaction or its tranches within a given month
@@ -41,6 +42,36 @@ function calcWykonanieForMonth(
             } else {
                 return sum + (tr.kwota - kosztyProp + kredytProp) * prob / 100
             }
+        }, 0)
+}
+
+// Helper: calculate only realized (zrealizowana) wykonanie for a transaction in a given month
+function calcZrealizowaneForMonth(
+    tx: Transaction,
+    month: number,
+    year: number,
+    txTranches: TransactionTranche[] | undefined
+): number {
+    if (!txTranches || txTranches.length === 0) {
+        // No tranches: transaction is considered fully realized
+        if (tx.miesiac === month && tx.rok === year) {
+            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+        }
+        return 0
+    }
+
+    // Has tranches: only count realized ones (status === 'zrealizowana')
+    const prowizjaNetto = tx.prowizjaNetto || 0
+    const koszty = tx.koszty || 0
+    const kredyt = tx.kredyt || 0
+
+    return txTranches
+        .filter(tr => tr.miesiac === month && tr.rok === year && tr.status === 'zrealizowana')
+        .reduce((sum, tr) => {
+            const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
+            const kosztyProp = koszty * udzial
+            const kredytProp = kredyt * udzial
+            return sum + (tr.kwota - kosztyProp + kredytProp)
         }, 0)
 }
 
@@ -149,18 +180,23 @@ export function usePerformanceData(
                 const monthTransactions = yearTransactions.filter(t => t.oddzial === branch)
                 const wykonanie = monthTransactions.reduce((sum, t) => {
                     const txTranches = t.id ? tranchesByTransaction?.get(t.id) : undefined
+                    return sum + calcZrealizowaneForMonth(t, month, year, txTranches)
+                }, 0)
+                const prognoza = monthTransactions.reduce((sum, t) => {
+                    const txTranches = t.id ? tranchesByTransaction?.get(t.id) : undefined
                     return sum + calcWykonanieForMonth(t, month, year, txTranches)
                 }, 0)
 
-                // Only include if there's a plan or wykonanie
-                if (plan > 0 || wykonanie > 0) {
+                // Only include if there's a plan, wykonanie or prognoza
+                if (plan > 0 || wykonanie > 0 || prognoza > 0) {
                     result.push({
                         id: dbTarget?.id,
                         oddzial: branch,
                         rok: year,
                         miesiac: month,
                         plan_kwota: plan,
-                        wykonanie_kwota: wykonanie
+                        wykonanie_kwota: wykonanie,
+                        prognoza_kwota: prognoza
                     })
                 }
             }

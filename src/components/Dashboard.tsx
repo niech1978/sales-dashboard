@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy, Shield } from 'lucide-react'
+import FreedomLogo from './FreedomLogo'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useData } from '../hooks/useData'
 import { useWindowWidth } from '../hooks/useWindowWidth'
@@ -195,18 +196,8 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     >
                         <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <div style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    background: 'var(--primary)',
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginRight: '1rem',
-                                    boxShadow: '0 8px 16px rgba(99, 102, 241, 0.4)'
-                                }}>
-                                    <TrendingUp size={24} color="white" />
+                                <div style={{ marginRight: '0.75rem', filter: 'drop-shadow(0 4px 12px rgba(230, 0, 126, 0.4))' }}>
+                                    <FreedomLogo size={40} />
                                 </div>
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: 800, background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Freedom</h2>
                             </div>

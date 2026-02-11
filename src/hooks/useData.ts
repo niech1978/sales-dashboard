@@ -12,55 +12,54 @@ export function useData() {
 
     useEffect(() => {
         fetchData()
-    }, [])
+    }, [dateRange.year])
 
     async function fetchData() {
         try {
             setLoading(true)
 
-            // 1. Fetch Agents
-            const { data: agentsData, error: agentsError } = await supabase
-                .from('agents')
-                .select('*')
-                .order('name')
+            const yearFilter = [dateRange.year, dateRange.year - 1]
 
-            if (agentsError) {
-                console.warn('Agents fetch info:', agentsError)
-                // We don't throw for agents specifically to allow partial functionality,
-                // but we should know if the table is missing
-                if (agentsError.code === '42P01') throw new Error('Nie znaleziono tabeli "agents" w Supabase. Uruchom skrypt SQL!')
+            // Fetch all 3 in parallel
+            const [agentsResult, transResult, tranchesResult] = await Promise.all([
+                supabase
+                    .from('agents')
+                    .select('*')
+                    .order('name'),
+                supabase
+                    .from('transactions')
+                    .select('*')
+                    .in('rok', yearFilter)
+                    .order('rok', { ascending: false })
+                    .order('miesiac', { ascending: false }),
+                supabase
+                    .from('transaction_tranches')
+                    .select('*')
+                    .in('rok', yearFilter)
+                    .order('rok', { ascending: true })
+                    .order('miesiac', { ascending: true })
+            ])
+
+            if (agentsResult.error) {
+                console.warn('Agents fetch info:', agentsResult.error)
+                if (agentsResult.error.code === '42P01') throw new Error('Nie znaleziono tabeli "agents" w Supabase. Uruchom skrypt SQL!')
             }
 
-            // 2. Fetch Transactions
-            const { data: transData, error: transError } = await supabase
-                .from('transactions')
-                .select('*')
-                .order('rok', { ascending: false })
-                .order('miesiac', { ascending: false })
-
-            if (transError) {
-                console.warn('Transactions fetch info:', transError)
-                if (transError.code === '42P01') throw new Error('Nie znaleziono tabeli "transactions" w Supabase. Uruchom skrypt SQL!')
-                throw transError
+            if (transResult.error) {
+                console.warn('Transactions fetch info:', transResult.error)
+                if (transResult.error.code === '42P01') throw new Error('Nie znaleziono tabeli "transactions" w Supabase. Uruchom skrypt SQL!')
+                throw transResult.error
             }
 
-            // 3. Fetch Tranches
-            const { data: tranchesData, error: tranchesError } = await supabase
-                .from('transaction_tranches')
-                .select('*')
-                .order('rok', { ascending: true })
-                .order('miesiac', { ascending: true })
-
-            if (tranchesError) {
-                // Table may not exist yet - that's ok
-                if (tranchesError.code !== '42P01') {
-                    console.warn('Tranches fetch info:', tranchesError)
+            if (tranchesResult.error) {
+                if (tranchesResult.error.code !== '42P01') {
+                    console.warn('Tranches fetch info:', tranchesResult.error)
                 }
             }
 
-            setDbAgents(agentsData || [])
-            setDbTransactions(transData || [])
-            setDbTranches(tranchesData || [])
+            setDbAgents(agentsResult.data || [])
+            setDbTransactions(transResult.data || [])
+            setDbTranches(tranchesResult.data || [])
         } catch (err: unknown) {
             console.error('Error fetching data:', err)
             setError(err instanceof Error ? err.message : 'Wystąpił błąd pobierania danych')
@@ -170,13 +169,15 @@ export function useData() {
         return result
     }, [tranchesByTransaction])
 
-    // 2. Available Years
+    // 2. Available Years - static range (no need to iterate all transactions)
     const availableYears = useMemo(() => {
-        const years = new Set<number>()
-        transactions.forEach(t => years.add(t.rok))
-        years.add(new Date().getFullYear())
-        return Array.from(years).sort((a, b) => b - a)
-    }, [transactions])
+        const currentYear = new Date().getFullYear()
+        const years: number[] = []
+        for (let y = currentYear + 1; y >= currentYear - 2; y--) {
+            years.push(y)
+        }
+        return years
+    }, [])
 
     // 3. Filtered Transactions - transaction is visible if ANY of its tranches falls in date range
     const allTransactions = useMemo(() => {

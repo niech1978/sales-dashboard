@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Mail, Lock, LogIn, AlertCircle, Loader2, TrendingUp, Check } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Loader2, Check } from 'lucide-react';
+import FreedomLogo from './FreedomLogo';
 
 interface AuthProps {
     onPasswordUpdated?: () => void;
@@ -115,19 +116,19 @@ export default function Auth({ onPasswordUpdated, isRecovery }: AuthProps) {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                     <div style={{
-                        width: '64px',
-                        height: '64px',
-                        background: isUpdatingPassword ? 'var(--accent-green)' : 'var(--primary)',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         margin: '0 auto 1.5rem',
-                        boxShadow: isUpdatingPassword
-                            ? '0 12px 24px rgba(16, 185, 129, 0.3)'
-                            : '0 12px 24px rgba(99, 102, 241, 0.3)'
+                        filter: 'drop-shadow(0 12px 24px rgba(230, 0, 126, 0.3))'
                     }}>
-                        {isUpdatingPassword ? <Lock size={32} color="white" /> : <TrendingUp size={32} color="white" />}
+                        {isUpdatingPassword
+                            ? <div style={{
+                                width: '64px', height: '64px',
+                                background: 'var(--accent-green)', borderRadius: '16px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto',
+                                boxShadow: '0 12px 24px rgba(16, 185, 129, 0.3)'
+                            }}><Lock size={32} color="white" /></div>
+                            : <FreedomLogo size={64} />
+                        }
                     </div>
                     <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>Freedom</h1>
                     <p style={{ color: 'var(--text-muted)' }}>
