@@ -96,6 +96,13 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
     const transactionsCount = unfilteredTransactions.length
 
+    // Manager widzi tylko dane ze swojego oddziału
+    const isManager = userRole === 'manager' && userOddzial
+    const visibleTransactions = isManager ? allTransactions.filter(t => t.oddzial === userOddzial) : allTransactions
+    const visibleUnfilteredTransactions = isManager ? unfilteredTransactions.filter(t => t.oddzial === userOddzial) : unfilteredTransactions
+    const visibleAgents = isManager ? allAgents.filter(a => a.oddzial === userOddzial) : allAgents
+    const visibleDbTransactions = isManager ? transactions.filter(t => t.oddzial === userOddzial) : transactions
+
     const renderContent = () => {
         if (loading && transactionsCount === 0) return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
@@ -106,23 +113,23 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
         switch (activeTab) {
             case 'summary': return (
                 <SummaryView
-                    transactions={allTransactions}
-                    allDbTransactions={transactions}
+                    transactions={visibleTransactions}
+                    allDbTransactions={visibleDbTransactions}
                     dateRange={dateRange}
                     getEffectiveTranches={getEffectiveTranches}
                 />
             )
             case 'branches': return (
                 <BranchesView
-                    transactions={allTransactions}
+                    transactions={visibleTransactions}
                     getEffectiveTranches={getEffectiveTranches}
                     dateRange={dateRange}
                 />
             )
             case 'agents': return (
                 <AgentsView
-                    transactions={allTransactions}
-                    agents={allAgents}
+                    transactions={visibleTransactions}
+                    agents={visibleAgents}
                     onAddAgent={() => setIsAddingAgent(true)}
                     onToggleStatus={toggleAgentStatus}
                     getEffectiveTranches={getEffectiveTranches}
@@ -132,17 +139,17 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             )
             case 'reports': return (
                 <ReportsView
-                    transactions={allTransactions}
+                    transactions={visibleTransactions}
                     getEffectiveTranches={getEffectiveTranches}
                     dateRange={dateRange}
                 />
             )
             case 'database': return (
                 <DatabaseView
-                    transactions={unfilteredTransactions.filter(t => t.rok === dateRange.year)}
+                    transactions={visibleUnfilteredTransactions.filter(t => t.rok === dateRange.year)}
                     onDelete={deleteTransaction}
                     onUpdate={updateTransaction}
-                    agents={allAgents}
+                    agents={visibleAgents}
                     tranchesByTransaction={tranchesByTransaction}
                     onSaveTranches={saveTranches}
                     userRole={userRole}
@@ -150,17 +157,17 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             )
             case 'performance': return (
                 <PerformanceView
-                    agents={allAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
+                    agents={visibleAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
                     userRole={userRole}
-                    transactions={transactions}
+                    transactions={visibleDbTransactions}
                     tranchesByTransaction={tranchesByTransaction}
                 />
             )
             case 'users': return <UserManagement />
             default: return (
                 <SummaryView
-                    transactions={allTransactions}
-                    allDbTransactions={transactions}
+                    transactions={visibleTransactions}
+                    allDbTransactions={visibleDbTransactions}
                     dateRange={dateRange}
                     getEffectiveTranches={getEffectiveTranches}
                 />
@@ -500,7 +507,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
 
             {isAddingData && (
                 <DataEntry
-                    agents={allAgents.filter(a => a.status === 'aktywny')}
+                    agents={visibleAgents.filter(a => a.status === 'aktywny')}
                     availableYears={availableYears}
                     onAdd={addTransaction}
                     onClose={() => setIsAddingData(false)}

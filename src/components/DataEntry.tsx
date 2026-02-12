@@ -15,6 +15,8 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
     // Manager może dodawać tylko do swojego oddziału
     const defaultOddzial = userRole === 'manager' && userOddzial ? userOddzial : 'Kraków'
 
+    const [prowizjaMode, setProwizjaMode] = useState<'netto' | 'brutto'>('netto')
+
     const [formData, setFormData] = useState<Partial<Transaction>>({
         miesiac: 1,
         rok: 2026,
@@ -165,9 +167,11 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                         <div className="form-group">
                             <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                value={formData.wartoscNieruchomosci}
+                                value={formData.wartoscNieruchomosci || ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => {
                                     const val = parseFloat(e.target.value) || 0;
                                     const newCommission = formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0
@@ -175,16 +179,18 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                         : formData.prowizjaNetto;
                                     setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: newCommission });
                                 }}
+                                placeholder="0"
                             />
                         </div>
                         <div className="form-group">
                             <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><Repeat size={16} /> Prowizja (%)</label>
                             <input
-                                type="number"
-                                step="0.01"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
                                 placeholder="%"
                                 value={formData.wartoscNieruchomosci && formData.prowizjaNetto ? ((formData.prowizjaNetto / formData.wartoscNieruchomosci) * 100).toFixed(2) : ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => {
                                     const pct = parseFloat(e.target.value) || 0;
                                     if (formData.wartoscNieruchomosci) {
@@ -195,14 +201,50 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Prowizja Netto (zł)</label>
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}>
+                                <DollarSign size={16} />
+                                <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    Prowizja
+                                    <span style={{ display: 'inline-flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', fontSize: '0.7rem' }}>
+                                        <button type="button" onClick={() => setProwizjaMode('netto')} style={{
+                                            padding: '0.15rem 0.4rem', border: 'none', cursor: 'pointer',
+                                            background: prowizjaMode === 'netto' ? 'var(--primary)' : 'transparent',
+                                            color: prowizjaMode === 'netto' ? '#fff' : 'var(--text-muted)', fontWeight: 600
+                                        }}>Netto</button>
+                                        <button type="button" onClick={() => setProwizjaMode('brutto')} style={{
+                                            padding: '0.15rem 0.4rem', border: 'none', cursor: 'pointer',
+                                            background: prowizjaMode === 'brutto' ? 'var(--accent-pink)' : 'transparent',
+                                            color: prowizjaMode === 'brutto' ? '#fff' : 'var(--text-muted)', fontWeight: 600
+                                        }}>Brutto</button>
+                                    </span>
+                                    (zł)
+                                </span>
+                            </label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
                                 required
-                                value={formData.prowizjaNetto}
-                                onChange={e => setFormData({ ...formData, prowizjaNetto: parseFloat(e.target.value) || 0 })}
+                                value={prowizjaMode === 'netto'
+                                    ? (formData.prowizjaNetto || '')
+                                    : (formData.prowizjaNetto ? (formData.prowizjaNetto * 1.23).toFixed(2) : '')}
+                                onFocus={e => e.target.select()}
+                                onChange={e => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    const netto = prowizjaMode === 'brutto' ? val / 1.23 : val;
+                                    setFormData({ ...formData, prowizjaNetto: netto });
+                                }}
+                                placeholder="0"
                             />
+                            {prowizjaMode === 'brutto' && formData.prowizjaNetto ? (
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    Netto: {formData.prowizjaNetto.toFixed(2)} zł (VAT 23%)
+                                </span>
+                            ) : prowizjaMode === 'netto' && formData.prowizjaNetto ? (
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    Brutto: {(formData.prowizjaNetto * 1.23).toFixed(2)} zł
+                                </span>
+                            ) : null}
                         </div>
                     </div>
 
@@ -210,27 +252,31 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                         <div className="form-group">
                             <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><MinusCircle size={16} /> Koszty (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                placeholder="Koszty obniżają prowizję"
-                                value={formData.koszty || 0}
+                                placeholder="0"
+                                value={formData.koszty || ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, koszty: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                         <div className="form-group">
                             <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><CreditCard size={16} /> Kredyt (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                placeholder="Kredyt + prowizja = wykonanie"
-                                value={formData.kredyt || 0}
+                                placeholder="0"
+                                value={formData.kredyt || ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, kredyt: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                         <div className="form-group">
                             <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wykonanie (zł)</label>
                             <input
-                                type="number"
+                                type="text"
                                 className="input-field"
                                 disabled
                                 value={((formData.prowizjaNetto || 0) - (formData.koszty || 0) + (formData.kredyt || 0)).toFixed(2)}

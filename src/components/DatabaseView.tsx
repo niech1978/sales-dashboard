@@ -461,18 +461,24 @@ const EditTransactionModal = ({
                         <div className="form-group">
                             <label><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                value={formData.wartoscNieruchomosci}
+                                value={formData.wartoscNieruchomosci || ''}
+                                placeholder="0"
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, wartoscNieruchomosci: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                         <div className="form-group">
                             <label><DollarSign size={16} /> Prowizja Netto (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                value={formData.prowizjaNetto}
+                                value={formData.prowizjaNetto || ''}
+                                placeholder="0"
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, prowizjaNetto: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
@@ -482,27 +488,31 @@ const EditTransactionModal = ({
                         <div className="form-group">
                             <label><MinusCircle size={16} /> Koszty (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                placeholder="Obniżają prowizję"
-                                value={formData.koszty || 0}
+                                placeholder="0"
+                                value={formData.koszty || ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, koszty: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                         <div className="form-group">
                             <label><CreditCard size={16} /> Kredyt (zł)</label>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 className="input-field"
-                                placeholder="Dodaje do wykonania"
-                                value={formData.kredyt || 0}
+                                placeholder="0"
+                                value={formData.kredyt || ''}
+                                onFocus={e => e.target.select()}
                                 onChange={e => setFormData({ ...formData, kredyt: parseFloat(e.target.value) || 0 })}
                             />
                         </div>
                         <div className="form-group">
                             <label><DollarSign size={16} /> Wykonanie (zł)</label>
                             <input
-                                type="number"
+                                type="text"
                                 className="input-field"
                                 disabled
                                 value={wykonanie.toFixed(2)}
