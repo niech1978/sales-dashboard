@@ -110,7 +110,6 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                             <SortableHeader label="Agent" sortKey="agent" onSort={requestSort} />
                             <SortableHeader label="Typ" sortKey="typNieruchomosci" onSort={requestSort} />
                             <SortableHeader label="Strona" sortKey="strona" onSort={requestSort} />
-                            <SortableHeader label="Nr" sortKey="transakcja" onSort={requestSort} />
                             <SortableHeader label="Adres" sortKey="adres" onSort={requestSort} />
                             <SortableHeader label="Prowizja" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
                             <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>%</th>
@@ -146,7 +145,6 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                                             {t.strona}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '0.6rem 0.5rem' }}>{t.transakcja}</td>
                                     <td style={{ padding: '0.6rem 0.5rem', color: 'var(--text-muted)' }}>{t.adres}</td>
                                     <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right', fontWeight: 600, color: 'var(--accent-green)' }}>
                                         {formatCurrency(t.prowizjaNetto)}

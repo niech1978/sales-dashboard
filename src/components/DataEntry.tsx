@@ -17,6 +17,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
 
     const [prowizjaMode, setProwizjaMode] = useState<'netto' | 'brutto'>('netto')
     const [prowizjaInput, setProwizjaInput] = useState('')
+    const [pctInput, setPctInput] = useState('')
 
     const [formData, setFormData] = useState<Partial<Transaction>>({
         miesiac: 1,
@@ -175,11 +176,13 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 onFocus={e => e.target.select()}
                                 onChange={e => {
                                     const val = parseFloat(e.target.value) || 0;
-                                    const newCommission = formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0
+                                    const netto = formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0
                                         ? (formData.prowizjaNetto / formData.wartoscNieruchomosci) * val
                                         : formData.prowizjaNetto;
-                                    setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: newCommission });
-                                    if (newCommission) setProwizjaInput(prowizjaMode === 'brutto' ? (newCommission * 1.23).toFixed(2) : String(Math.round(newCommission * 100) / 100));
+                                    setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: netto });
+                                    if (netto) {
+                                        setProwizjaInput(prowizjaMode === 'brutto' ? (netto * 1.23).toFixed(2) : String(Math.round(netto * 100) / 100));
+                                    }
                                 }}
                                 placeholder="0"
                             />
@@ -191,14 +194,18 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 inputMode="decimal"
                                 className="input-field"
                                 placeholder="%"
-                                value={formData.wartoscNieruchomosci && formData.prowizjaNetto ? ((formData.prowizjaNetto / formData.wartoscNieruchomosci) * 100).toFixed(2) : ''}
+                                value={pctInput}
                                 onFocus={e => e.target.select()}
                                 onChange={e => {
-                                    const pct = parseFloat(e.target.value) || 0;
-                                    if (formData.wartoscNieruchomosci) {
-                                        const amount = (formData.wartoscNieruchomosci * pct) / 100;
-                                        setFormData({ ...formData, prowizjaNetto: amount });
-                                        setProwizjaInput(prowizjaMode === 'brutto' ? (amount * 1.23).toFixed(2) : String(Math.round(amount * 100) / 100));
+                                    const raw = e.target.value.replace(',', '.');
+                                    if (raw === '' || /^\d*\.?\d{0,2}$/.test(raw)) {
+                                        setPctInput(raw);
+                                        const pct = parseFloat(raw) || 0;
+                                        if (formData.wartoscNieruchomosci) {
+                                            const amount = (formData.wartoscNieruchomosci * pct) / 100;
+                                            setFormData(prev => ({ ...prev, prowizjaNetto: amount }));
+                                            setProwizjaInput(prowizjaMode === 'brutto' ? (amount * 1.23).toFixed(2) : String(Math.round(amount * 100) / 100));
+                                        }
                                     }
                                 }}
                             />
@@ -209,12 +216,24 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                     Prowizja
                                     <span style={{ display: 'inline-flex', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', fontSize: '0.7rem' }}>
-                                        <button type="button" onClick={() => setProwizjaMode('netto')} style={{
+                                        <button type="button" onClick={() => {
+                                            if (prowizjaMode !== 'netto') {
+                                                setProwizjaMode('netto');
+                                                const netto = formData.prowizjaNetto || 0;
+                                                setProwizjaInput(netto ? String(Math.round(netto * 100) / 100) : '');
+                                            }
+                                        }} style={{
                                             padding: '0.15rem 0.4rem', border: 'none', cursor: 'pointer',
                                             background: prowizjaMode === 'netto' ? 'var(--primary)' : 'transparent',
                                             color: prowizjaMode === 'netto' ? '#fff' : 'var(--text-muted)', fontWeight: 600
                                         }}>Netto</button>
-                                        <button type="button" onClick={() => setProwizjaMode('brutto')} style={{
+                                        <button type="button" onClick={() => {
+                                            if (prowizjaMode !== 'brutto') {
+                                                setProwizjaMode('brutto');
+                                                const netto = formData.prowizjaNetto || 0;
+                                                setProwizjaInput(netto ? (netto * 1.23).toFixed(2) : '');
+                                            }
+                                        }} style={{
                                             padding: '0.15rem 0.4rem', border: 'none', cursor: 'pointer',
                                             background: prowizjaMode === 'brutto' ? 'var(--accent-pink)' : 'transparent',
                                             color: prowizjaMode === 'brutto' ? '#fff' : 'var(--text-muted)', fontWeight: 600
@@ -237,6 +256,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                         const val = parseFloat(raw) || 0;
                                         const netto = prowizjaMode === 'brutto' ? val / 1.23 : val;
                                         setFormData(prev => ({ ...prev, prowizjaNetto: netto }));
+                                        if (formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0) {
+                                            setPctInput(((netto / formData.wartoscNieruchomosci) * 100).toFixed(2));
+                                        }
                                     }
                                 }}
                                 placeholder="0"
@@ -279,12 +301,12 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wykonanie (zł)</label>
+                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wykonanie {prowizjaMode === 'brutto' ? '(brutto)' : '(netto)'}</label>
                             <input
                                 type="text"
                                 className="input-field"
                                 disabled
-                                value={((formData.prowizjaNetto || 0) - (formData.koszty || 0) + (formData.kredyt || 0)).toFixed(2)}
+                                value={(((formData.prowizjaNetto || 0) * (prowizjaMode === 'brutto' ? 1.23 : 1)) - (formData.koszty || 0) + (formData.kredyt || 0)).toFixed(2)}
                                 style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', fontWeight: 700 }}
                             />
                         </div>
