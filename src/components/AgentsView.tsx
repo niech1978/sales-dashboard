@@ -11,11 +11,12 @@ interface AgentsViewProps {
     getEffectiveTranches?: (txs: Transaction[], startMonth: number, endMonth: number, year: number) => EffectiveTranche[]
     dateRange?: { startMonth: number, endMonth: number, year: number }
     userRole?: string
+    userOddzial?: string | null
 }
 
-const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus, getEffectiveTranches, dateRange, userRole = 'agent' }: AgentsViewProps) => {
+const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus, getEffectiveTranches, dateRange, userRole = 'agent', userOddzial = null }: AgentsViewProps) => {
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedBranch, setSelectedBranch] = useState('all')
+    const [selectedBranch, setSelectedBranch] = useState(userRole === 'manager' && userOddzial ? userOddzial : 'all')
     const windowWidth = useWindowWidth()
 
     const agentStats = useMemo(() => {

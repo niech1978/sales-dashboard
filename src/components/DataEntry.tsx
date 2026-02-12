@@ -16,6 +16,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
     const defaultOddzial = userRole === 'manager' && userOddzial ? userOddzial : 'Kraków'
 
     const [prowizjaMode, setProwizjaMode] = useState<'netto' | 'brutto'>('netto')
+    const [prowizjaInput, setProwizjaInput] = useState('')
 
     const [formData, setFormData] = useState<Partial<Transaction>>({
         miesiac: 1,
@@ -178,6 +179,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                         ? (formData.prowizjaNetto / formData.wartoscNieruchomosci) * val
                                         : formData.prowizjaNetto;
                                     setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: newCommission });
+                                    if (newCommission) setProwizjaInput(prowizjaMode === 'brutto' ? (newCommission * 1.23).toFixed(2) : String(Math.round(newCommission * 100) / 100));
                                 }}
                                 placeholder="0"
                             />
@@ -196,6 +198,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                     if (formData.wartoscNieruchomosci) {
                                         const amount = (formData.wartoscNieruchomosci * pct) / 100;
                                         setFormData({ ...formData, prowizjaNetto: amount });
+                                        setProwizjaInput(prowizjaMode === 'brutto' ? (amount * 1.23).toFixed(2) : String(Math.round(amount * 100) / 100));
                                     }
                                 }}
                             />
@@ -225,14 +228,16 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 inputMode="decimal"
                                 className="input-field"
                                 required
-                                value={prowizjaMode === 'netto'
-                                    ? (formData.prowizjaNetto || '')
-                                    : (formData.prowizjaNetto ? (formData.prowizjaNetto * 1.23).toFixed(2) : '')}
+                                value={prowizjaInput}
                                 onFocus={e => e.target.select()}
                                 onChange={e => {
-                                    const val = parseFloat(e.target.value) || 0;
-                                    const netto = prowizjaMode === 'brutto' ? val / 1.23 : val;
-                                    setFormData({ ...formData, prowizjaNetto: netto });
+                                    const raw = e.target.value.replace(',', '.');
+                                    if (raw === '' || /^\d*\.?\d{0,2}$/.test(raw)) {
+                                        setProwizjaInput(raw);
+                                        const val = parseFloat(raw) || 0;
+                                        const netto = prowizjaMode === 'brutto' ? val / 1.23 : val;
+                                        setFormData(prev => ({ ...prev, prowizjaNetto: netto }));
+                                    }
                                 }}
                                 placeholder="0"
                             />

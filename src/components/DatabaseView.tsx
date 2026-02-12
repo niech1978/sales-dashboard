@@ -11,13 +11,14 @@ interface DatabaseViewProps {
     tranchesByTransaction?: Map<string, TransactionTranche[]>
     onSaveTranches?: (transactionId: string, tranches: Omit<TransactionTranche, 'id' | 'transaction_id' | 'created_at' | 'updated_at'>[]) => Promise<string | null>
     userRole?: string
+    userOddzial?: string | null
 }
 
 const PAGE_SIZE = 50
 
-const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTransaction, onSaveTranches, userRole = 'agent' }: DatabaseViewProps) => {
+const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTransaction, onSaveTranches, userRole = 'agent', userOddzial = null }: DatabaseViewProps) => {
     const [searchTerm, setSearchTerm] = useState('')
-    const [selectedBranch, setSelectedBranch] = useState('all')
+    const [selectedBranch, setSelectedBranch] = useState(userRole === 'manager' && userOddzial ? userOddzial : 'all')
     const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction, direction: 'asc' | 'desc' } | null>(null)
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
     const [trancheTransaction, setTrancheTransaction] = useState<Transaction | null>(null)

@@ -135,6 +135,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     getEffectiveTranches={getEffectiveTranches}
                     dateRange={dateRange}
                     userRole={userRole}
+                    userOddzial={userOddzial}
                 />
             )
             case 'reports': return (
@@ -153,12 +154,14 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     tranchesByTransaction={tranchesByTransaction}
                     onSaveTranches={saveTranches}
                     userRole={userRole}
+                    userOddzial={userOddzial}
                 />
             )
             case 'performance': return (
                 <PerformanceView
                     agents={visibleAgents.map(a => ({ name: a.name, oddzial: a.oddzial }))}
                     userRole={userRole}
+                    userOddzial={userOddzial}
                     transactions={visibleDbTransactions}
                     tranchesByTransaction={tranchesByTransaction}
                 />

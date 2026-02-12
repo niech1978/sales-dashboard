@@ -293,6 +293,7 @@ interface PerformanceViewProps {
     year?: number
     agents?: { name: string; oddzial: string }[]
     userRole?: string
+    userOddzial?: string | null
     transactions?: import('../types').Transaction[]
     tranchesByTransaction?: Map<string, import('../types').TransactionTranche[]>
 }
@@ -303,11 +304,13 @@ interface PlansTableProps {
     branchTargets: import('../types').BranchTarget[]
     selectedYear: number
     userRole: string
+    userOddzial?: string | null
     onEditPlans: () => void
 }
 
-const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: PlansTableProps) => {
-    const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+const PlansTable = ({ branchTargets, selectedYear, userRole, userOddzial, onEditPlans }: PlansTableProps) => {
+    const isManager = userRole === 'manager' && userOddzial
+    const branches = isManager ? [userOddzial] : ['Kraków', 'Warszawa', 'Olsztyn']
     const currentMonth = new Date().getMonth() + 1
     const currentYear = new Date().getFullYear()
     const isCurrentYear = selectedYear === currentYear
@@ -638,7 +641,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, onEditPlans }: Plan
     )
 }
 
-const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent', transactions = [], tranchesByTransaction }: PerformanceViewProps) => {
+const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents = [], userRole = 'agent', userOddzial = null, transactions = [], tranchesByTransaction }: PerformanceViewProps) => {
     const [selectedYear, setSelectedYear] = useState(initialYear)
     const [isAddingPerformance, setIsAddingPerformance] = useState(false)
     const [isEditingTargets, setIsEditingTargets] = useState(false)
@@ -731,6 +734,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                 branchTargets={branchTargets}
                 selectedYear={selectedYear}
                 userRole={userRole}
+                userOddzial={userOddzial}
                 onEditPlans={() => setIsEditingTargets(true)}
             />
 
@@ -820,7 +824,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                                 Ranking wg prowizji netto + kredyt
                             </p>
-                            <div style={{ height: '400px', width: '100%' }}>
+                            <div style={{ height: Math.max(120, filteredAgents.length * 40 + 40), width: '100%' }}>
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                         data={filteredAgents}
