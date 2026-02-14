@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, TrendingUp, LogOut, PlusCircle, Building2, Calendar, Filter, Database, RefreshCw, AlertCircle, User, Menu, X, Trophy, Shield, ScrollText } from 'lucide-react'
 import FreedomLogo from './FreedomLogo'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useData } from '../hooks/useData'
@@ -15,12 +15,13 @@ import ReportsView from './ReportsView'
 import DatabaseView from './DatabaseView'
 import PerformanceView from './PerformanceView'
 import UserManagement from './UserManagement'
+import AuditLogView from './AuditLogView'
 
 interface DashboardProps {
     onLogout: () => void
 }
 
-type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database' | 'performance' | 'users'
+type TabType = 'summary' | 'branches' | 'agents' | 'reports' | 'database' | 'performance' | 'users' | 'audit'
 
 const Dashboard = ({ onLogout }: DashboardProps) => {
     const {
@@ -128,7 +129,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             )
             case 'agents': return (
                 <AgentsView
-                    transactions={visibleTransactions}
+                    transactions={visibleUnfilteredTransactions}
                     agents={visibleAgents}
                     onAddAgent={() => setIsAddingAgent(true)}
                     onToggleStatus={toggleAgentStatus}
@@ -167,6 +168,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                 />
             )
             case 'users': return <UserManagement />
+            case 'audit': return <AuditLogView />
             default: return (
                 <SummaryView
                     transactions={visibleTransactions}
@@ -187,6 +189,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
             case 'database': return 'Pełna Baza Danych'
             case 'performance': return 'Aktywność Agentów'
             case 'users': return 'Zarządzanie Użytkownikami'
+            case 'audit': return 'Historia Zmian'
             default: return 'Podsumowanie'
         }
     }
@@ -265,6 +268,14 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                                     label="Użytkownicy"
                                     active={activeTab === 'users'}
                                     onClick={() => setActiveTab('users')}
+                                />
+                            )}
+                            {userRole === 'superadmin' && (
+                                <NavItem
+                                    icon={<ScrollText size={20} />}
+                                    label="Logi"
+                                    active={activeTab === 'audit'}
+                                    onClick={() => setActiveTab('audit')}
                                 />
                             )}
 
@@ -402,7 +413,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
                         <div>
                             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 700 }}>{getTabTitle()}</h1>
-                            {activeTab !== 'performance' && activeTab !== 'users' && (
+                            {activeTab !== 'performance' && activeTab !== 'users' && activeTab !== 'audit' && (
                                 <p style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
                                     <Calendar size={16} style={{ marginRight: '0.5rem' }} />
                                     {monthNames[dateRange.startMonth - 1]} - {monthNames[dateRange.endMonth - 1]} {dateRange.year}
@@ -410,7 +421,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                             )}
                         </div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && activeTab !== 'performance' && activeTab !== 'users' && (
+                            {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && activeTab !== 'performance' && activeTab !== 'users' && activeTab !== 'audit' && (
                                 <button
                                     className="mobile-only btn btn-primary"
                                     style={{ padding: '0.75rem' }}
@@ -429,7 +440,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                         </div>
                     </div>
 
-                    {activeTab !== 'performance' && activeTab !== 'users' && (
+                    {activeTab !== 'performance' && activeTab !== 'users' && activeTab !== 'audit' && (
                         <div className="glass-card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                             <Filter size={18} color="var(--primary)" />
                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -491,7 +502,7 @@ const Dashboard = ({ onLogout }: DashboardProps) => {
                     )}
                 </header>
 
-                {(activeTab === 'performance' || activeTab === 'users') ? (
+                {(activeTab === 'performance' || activeTab === 'users' || activeTab === 'audit') ? (
                     renderContent()
                 ) : (
                     <AnimatePresence mode="wait">

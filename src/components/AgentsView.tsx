@@ -40,7 +40,7 @@ const AgentsView = ({ transactions, agents, onAddAgent, onToggleStatus, getEffec
                 if (!statsMap[t.agent]) {
                     statsMap[t.agent] = { wykonanie: 0, count: 0 }
                 }
-                statsMap[t.agent].wykonanie += (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
+                statsMap[t.agent].wykonanie += (t.prowizjaNetto || 0) - (t.koszty || 0)
                 statsMap[t.agent].count += 1
             })
         }

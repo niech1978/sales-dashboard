@@ -8,8 +8,8 @@ interface BranchTargetWithWykonanie extends Omit<BranchTarget, 'wykonanie_kwota'
     prognoza_kwota: number  // realized + weighted forecast (non-realized tranches * probability)
 }
 
-// Helper: calculate wykonanie (prognoza) for a transaction or its tranches within a given month
-// Uses tranche kwota directly - koszty/kredyt are transaction-level, not distributed to tranches
+// Helper: calculate prognoza for a transaction or its tranches within a given month
+// Includes both zrealizowane and prognozowane transactions (full pipeline)
 function calcWykonanieForMonth(
     tx: Transaction,
     month: number,
@@ -32,13 +32,17 @@ function calcWykonanieForMonth(
         }, 0)
 }
 
-// Helper: calculate only realized (zrealizowana) kwota for a transaction in a given month
+// Helper: calculate only realized kwota for a transaction in a given month
+// Prognozowane transactions (statusTransakcji === 'prognozowana') are excluded entirely
 function calcZrealizowaneForMonth(
     tx: Transaction,
     month: number,
     year: number,
     txTranches: TransactionTranche[] | undefined
 ): number {
+    // Prognozowana transakcja - nic nie jest zrealizowane
+    if (tx.statusTransakcji === 'prognozowana') return 0
+
     if (!txTranches || txTranches.length === 0) {
         if (tx.miesiac === month && tx.rok === year) {
             return tx.prowizjaNetto || 0
@@ -59,28 +63,26 @@ function calcTotalWykonanie(
 ): number {
     if (!txTranches || txTranches.length === 0) {
         if (tx.rok === year) {
-            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+            return (tx.prowizjaNetto || 0) - (tx.koszty || 0)
         }
         return 0
     }
 
     const prowizjaNetto = tx.prowizjaNetto || 0
     const koszty = tx.koszty || 0
-    const kredyt = tx.kredyt || 0
 
     return txTranches
         .filter(tr => tr.rok === year)
         .reduce((sum, tr) => {
             const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
             const kosztyProp = koszty * udzial
-            const kredytProp = kredyt * udzial
             const isZrealizowana = tr.status === 'zrealizowana'
             const prob = isZrealizowana ? 100 : tr.prawdopodobienstwo
 
             if (isZrealizowana) {
-                return sum + (tr.kwota - kosztyProp + kredytProp)
+                return sum + (tr.kwota - kosztyProp)
             } else {
-                return sum + (tr.kwota - kosztyProp + kredytProp) * prob / 100
+                return sum + (tr.kwota - kosztyProp) * prob / 100
             }
         }, 0)
 }
@@ -181,7 +183,7 @@ export function usePerformanceData(
         return result
     }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction])
 
-    // Calculate wykonanie (prowizja - koszty + kredyt) from transactions for each agent
+    // Calculate wykonanie (prowizja - koszty) from transactions for each agent
     const agentPerformanceWithProwizja = useMemo(() => {
         // Get all unique agents from transactions with their branch
         const agentsFromTransactions = new Map<string, { name: string; oddzial: string; prowizja: number }>()

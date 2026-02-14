@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, CreditCard, DollarSign, Scissors, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Filter, Trash2, ArrowUpDown, Edit2, X, Save, MinusCircle, DollarSign, Scissors, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Transaction, Agent, TransactionTranche } from '../types'
 import TrancheEditor from './TrancheEditor'
 
@@ -114,8 +114,8 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                             <SortableHeader label="Prowizja" sortKey="prowizjaNetto" onSort={requestSort} textAlign="right" />
                             <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>%</th>
                             <SortableHeader label="Koszty" sortKey="koszty" onSort={requestSort} textAlign="right" />
-                            <SortableHeader label="Kredyt" sortKey="kredyt" onSort={requestSort} textAlign="right" />
                             <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'right' }}>Wykonanie</th>
+                            <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'center' }}>Status</th>
                             <SortableHeader label="Wartość" sortKey="wartoscNieruchomosci" onSort={requestSort} textAlign="right" />
                             {(userRole === 'admin' || userRole === 'superadmin' || userRole === 'manager') && (
                                 <th className="no-print" style={{ padding: '0.75rem 0.5rem', fontWeight: 600, textAlign: 'center' }}>Akcje</th>
@@ -125,10 +125,21 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                     <tbody>
                         {paginatedData.map((t) => {
                             const koszty = t.koszty || 0
-                            const kredyt = t.kredyt || 0
-                            const wykonanie = t.prowizjaNetto - koszty + kredyt
+                            const wykonanie = t.prowizjaNetto - koszty
+                            const isPrognoza = t.statusTransakcji === 'prognozowana'
+                            const stronaColors: Record<string, { bg: string; color: string }> = {
+                                'SPRZEDAŻ': { bg: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)' },
+                                'KUPNO': { bg: 'rgba(14, 165, 233, 0.1)', color: 'var(--accent-blue)' },
+                                'WYNAJEM': { bg: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' },
+                                'NAJEM': { bg: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' },
+                                'KREDYT': { bg: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }
+                            }
+                            const sc = stronaColors[t.strona] || { bg: 'rgba(99,102,241,0.1)', color: 'var(--primary)' }
                             return (
-                                <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }} className="table-row-hover">
+                                <tr key={t.id} style={{
+                                    borderBottom: '1px solid var(--border)', transition: 'background 0.2s',
+                                    opacity: isPrognoza ? 0.7 : 1
+                                }} className="table-row-hover">
                                     <td style={{ padding: '0.6rem 0.5rem' }}>{t.oddzial}</td>
                                     <td style={{ padding: '0.6rem 0.5rem' }}>{t.miesiac}</td>
                                     <td style={{ padding: '0.6rem 0.5rem' }}>{t.rok}</td>
@@ -136,11 +147,8 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                                     <td style={{ padding: '0.6rem 0.5rem' }}>{t.typNieruchomosci}</td>
                                     <td style={{ padding: '0.6rem 0.5rem' }}>
                                         <span style={{
-                                            fontSize: '0.7rem',
-                                            padding: '0.15rem 0.35rem',
-                                            borderRadius: '4px',
-                                            background: t.strona === 'SPRZEDAŻ' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(14, 165, 233, 0.1)',
-                                            color: t.strona === 'SPRZEDAŻ' ? 'var(--accent-green)' : 'var(--accent-blue)'
+                                            fontSize: '0.7rem', padding: '0.15rem 0.35rem', borderRadius: '4px',
+                                            background: sc.bg, color: sc.color
                                         }}>
                                             {t.strona}
                                         </span>
@@ -155,11 +163,17 @@ const DatabaseView = ({ transactions, onDelete, onUpdate, agents, tranchesByTran
                                     <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right', color: koszty > 0 ? 'var(--accent-pink)' : 'var(--text-muted)' }}>
                                         {koszty > 0 ? `-${formatCurrency(koszty)}` : '-'}
                                     </td>
-                                    <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right', color: kredyt > 0 ? 'var(--accent-blue)' : 'var(--text-muted)' }}>
-                                        {kredyt > 0 ? formatCurrency(kredyt) : '-'}
-                                    </td>
                                     <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right', fontWeight: 700, color: 'var(--primary)' }}>
                                         {formatCurrency(wykonanie)}
+                                    </td>
+                                    <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>
+                                        <span style={{
+                                            fontSize: '0.65rem', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600,
+                                            background: isPrognoza ? 'rgba(251, 191, 36, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                            color: isPrognoza ? '#fbbf24' : 'var(--accent-green)'
+                                        }}>
+                                            {isPrognoza ? 'PROGNOZA' : 'OK'}
+                                        </span>
                                     </td>
                                     <td style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>
                                         {t.wartoscNieruchomosci.toLocaleString()}
@@ -316,11 +330,11 @@ const EditTransactionModal = ({
     const [formData, setFormData] = useState<Transaction>({
         ...transaction,
         koszty: transaction.koszty || 0,
-        kredyt: transaction.kredyt || 0
+        statusTransakcji: transaction.statusTransakcji || 'zrealizowana'
     })
 
     const filteredAgents = agents.filter(a => a.oddzial === formData.oddzial)
-    const wykonanie = formData.prowizjaNetto - (formData.koszty || 0) + (formData.kredyt || 0)
+    const wykonanie = formData.prowizjaNetto - (formData.koszty || 0)
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
@@ -429,6 +443,7 @@ const EditTransactionModal = ({
                                 <option value="KUPNO">KUPNO</option>
                                 <option value="WYNAJEM">WYNAJEM</option>
                                 <option value="NAJEM">NAJEM</option>
+                                <option value="KREDYT">KREDYT</option>
                             </select>
                         </div>
                         <div className="form-group">
@@ -483,7 +498,7 @@ const EditTransactionModal = ({
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className="form-group">
                             <label><MinusCircle size={16} /> Koszty (zł)</label>
                             <input
@@ -497,18 +512,6 @@ const EditTransactionModal = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label><CreditCard size={16} /> Kredyt (zł)</label>
-                            <input
-                                type="text"
-                                inputMode="decimal"
-                                className="input-field"
-                                placeholder="0"
-                                value={formData.kredyt || ''}
-                                onFocus={e => e.target.select()}
-                                onChange={e => setFormData({ ...formData, kredyt: parseFloat(e.target.value) || 0 })}
-                            />
-                        </div>
-                        <div className="form-group">
                             <label><DollarSign size={16} /> Wykonanie (zł)</label>
                             <input
                                 type="text"
@@ -518,6 +521,34 @@ const EditTransactionModal = ({
                                 style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', fontWeight: 700 }}
                             />
                         </div>
+                    </div>
+
+                    {/* Status toggle */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        padding: '0.75rem 1rem', borderRadius: '10px',
+                        background: formData.statusTransakcji === 'prognozowana' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        border: `1px solid ${formData.statusTransakcji === 'prognozowana' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                    }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: formData.statusTransakcji === 'prognozowana' ? '#fbbf24' : 'var(--accent-green)' }}>
+                            {formData.statusTransakcji === 'prognozowana' ? 'Prognozowana' : 'Zrealizowana'}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, statusTransakcji: formData.statusTransakcji === 'prognozowana' ? 'zrealizowana' : 'prognozowana' })}
+                            style={{
+                                width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', position: 'relative',
+                                background: formData.statusTransakcji === 'prognozowana' ? '#fbbf24' : 'var(--accent-green)',
+                                transition: 'background 0.2s'
+                            }}
+                        >
+                            <span style={{
+                                position: 'absolute', top: '2px',
+                                left: formData.statusTransakcji === 'prognozowana' ? '22px' : '2px',
+                                width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                                transition: 'left 0.2s'
+                            }} />
+                        </button>
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

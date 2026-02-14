@@ -24,7 +24,6 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
         let totalWykonanie: number
         let totalCommission: number
         let totalKoszty: number
-        let totalKredyt: number
         let zrealizowane: number
         let prognozaWazona: number
 
@@ -32,7 +31,6 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
             // Tranche-based
             totalCommission = effectiveTranches.reduce((acc, et) => acc + et.kwota, 0)
             totalKoszty = effectiveTranches.reduce((acc, et) => acc + et.kosztyProporcjonalne, 0)
-            totalKredyt = effectiveTranches.reduce((acc, et) => acc + et.kredytProporcjonalny, 0)
             totalWykonanie = effectiveTranches.reduce((acc, et) => acc + et.wykonanie, 0)
             zrealizowane = effectiveTranches
                 .filter(et => et.status === 'zrealizowana')
@@ -42,10 +40,9 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
                 .reduce((acc, et) => acc + et.wykonanie, 0)
         } else {
             // Fallback: transaction-based
-            const calcWykonanie = (t: Transaction) => (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
+            const calcWykonanie = (t: Transaction) => (t.prowizjaNetto || 0) - (t.koszty || 0)
             totalCommission = transactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
             totalKoszty = transactions.reduce((acc, curr) => acc + (curr.koszty || 0), 0)
-            totalKredyt = transactions.reduce((acc, curr) => acc + (curr.kredyt || 0), 0)
             totalWykonanie = transactions.reduce((acc, curr) => acc + calcWykonanie(curr), 0)
             zrealizowane = totalWykonanie
             prognozaWazona = 0
@@ -79,7 +76,7 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
             const prevTranches = getEffectiveTranches(prevPeriodTransactions, prevStartMonth, prevEndMonth, prevYear)
             prevWykonanie = prevTranches.reduce((acc, et) => acc + et.wykonanie, 0)
         } else {
-            prevWykonanie = prevPeriodTransactions.reduce((acc, curr) => acc + (curr.prowizjaNetto || 0) - (curr.koszty || 0) + (curr.kredyt || 0), 0)
+            prevWykonanie = prevPeriodTransactions.reduce((acc, curr) => acc + (curr.prowizjaNetto || 0) - (curr.koszty || 0), 0)
         }
 
         const prevSales = prevPeriodTransactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
@@ -97,7 +94,7 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
         };
 
         return {
-            totalSales, totalCommission, totalWykonanie, totalKoszty, totalKredyt,
+            totalSales, totalCommission, totalWykonanie, totalKoszty,
             transactionCount, avgCommission, avgCommissionPct,
             zrealizowane, prognozaWazona,
             trends: {
@@ -127,8 +124,7 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
             value: transactions.filter(t => t.oddzial === name).reduce((acc, curr) => {
                 const prowizja = curr.prowizjaNetto || 0
                 const koszty = curr.koszty || 0
-                const kredyt = curr.kredyt || 0
-                return acc + (prowizja - koszty + kredyt)
+                return acc + (prowizja - koszty)
             }, 0)
         }))
     }, [transactions, dateRange, getEffectiveTranches])
@@ -153,7 +149,7 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
                     value={`${formatCurrency(stats.totalWykonanie)} PLN`}
                     trend={stats.trends.wykonanie}
                     icon={<TrendingUp size={20} color="var(--accent-pink)" />}
-                    trendLabel="prowizja - koszty + kredyt"
+                    trendLabel="prowizja - koszty"
                     subtitle={stats.prognozaWazona > 0 ? `Zrealiz.: ${formatCurrency(stats.zrealizowane)} / Prognoza: ${formatCurrency(stats.prognozaWazona)}` : undefined}
                 />
                 <StatCard
@@ -228,7 +224,7 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
                                 const initials = t.agent
                                     ? t.agent.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').toUpperCase()
                                     : '?';
-                                const wykonanie = (t.prowizjaNetto || 0) - (t.koszty || 0) + (t.kredyt || 0)
+                                const wykonanie = (t.prowizjaNetto || 0) - (t.koszty || 0)
                                 return (
                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center' }}>

@@ -105,11 +105,10 @@ const BranchesView = ({ transactions, getEffectiveTranches, dateRange }: Branche
                 const wykonanie = tranches.reduce((acc, et) => acc + et.wykonanie, 0)
                 const commission = tranches.reduce((acc, et) => acc + et.kwota, 0)
                 const koszty = tranches.reduce((acc, et) => acc + et.kosztyProporcjonalne, 0)
-                const kredyt = tranches.reduce((acc, et) => acc + et.kredytProporcjonalny, 0)
                 const volume = branchTxs.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
                 const count = branchTxs.length
 
-                return { name, commission, wykonanie, koszty, kredyt, volume, count }
+                return { name, commission, wykonanie, koszty, volume, count }
             })
         }
 
@@ -117,11 +116,10 @@ const BranchesView = ({ transactions, getEffectiveTranches, dateRange }: Branche
             const branchTransactions = transactions.filter(t => t.oddzial === name)
             const commission = branchTransactions.reduce((acc, curr) => acc + curr.prowizjaNetto, 0)
             const koszty = branchTransactions.reduce((acc, curr) => acc + (curr.koszty || 0), 0)
-            const kredyt = branchTransactions.reduce((acc, curr) => acc + (curr.kredyt || 0), 0)
-            const wykonanie = commission - koszty + kredyt // prowizja - koszty + kredyt
+            const wykonanie = commission - koszty
             const volume = branchTransactions.reduce((acc, curr) => acc + curr.wartoscNieruchomosci, 0)
             const count = branchTransactions.length
-            return { name, commission, wykonanie, koszty, kredyt, volume, count }
+            return { name, commission, wykonanie, koszty, volume, count }
         })
     }, [transactions, getEffectiveTranches, dateRange])
 
@@ -177,12 +175,6 @@ const BranchesView = ({ transactions, getEffectiveTranches, dateRange }: Branche
                                 <span style={{ color: 'var(--text-muted)' }}>Koszty</span>
                                 <span style={{ color: branch.koszty > 0 ? 'var(--accent-pink)' : 'var(--text-muted)' }}>
                                     {branch.koszty > 0 ? `-${formatCurrency(branch.koszty)}` : '-'}
-                                </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Kredyt</span>
-                                <span style={{ color: branch.kredyt > 0 ? 'var(--accent-blue)' : 'var(--text-muted)' }}>
-                                    {branch.kredyt > 0 ? formatCurrency(branch.kredyt) : '-'}
                                 </span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>

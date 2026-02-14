@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Save, Calendar, User, Building2, Home, MapPin, DollarSign, Repeat, MinusCircle, CreditCard } from 'lucide-react'
+import { X, Save, Calendar, User, Building2, Home, MapPin, DollarSign, Repeat, MinusCircle } from 'lucide-react'
 import type { Transaction, Agent } from '../types'
 
 interface DataEntryProps {
@@ -29,7 +29,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
         oddzial: defaultOddzial,
         adres: '',
         koszty: 0,
-        kredyt: 0
+        statusTransakcji: 'zrealizowana' as const
     })
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -55,19 +55,18 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                 width: '100%',
                 maxWidth: '600px',
                 position: 'relative',
-                maxHeight: '90vh',
-                overflowY: 'auto'
+                padding: '1.25rem 1.5rem'
             }}>
-                <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', color: 'var(--text-muted)', zIndex: 10 }}>
+                <button onClick={onClose} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', color: 'var(--text-muted)', zIndex: 10 }}>
                     <X size={24} />
                 </button>
 
-                <h2 className="modal-title" style={{ fontWeight: 700, marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h2 className="modal-title" style={{ fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem' }}>
                     <PlusCircleIcon /> Nowa Transakcja
                 </h2>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                         <div className="form-group">
                             <label><Building2 size={16} /> Oddział</label>
                             <select
@@ -99,7 +98,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                         <div className="form-group">
                             <label><Calendar size={16} /> Rok</label>
                             <select
@@ -135,11 +134,12 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 <option value="KUPNO">KUPNO</option>
                                 <option value="WYNAJEM">WYNAJEM</option>
                                 <option value="NAJEM">NAJEM</option>
+                                <option value="KREDYT">KREDYT</option>
                             </select>
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '0.75rem' }}>
                         <div className="form-group">
                             <label><Home size={16} /> Typ</label>
                             <select
@@ -165,9 +165,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1.5fr', gap: '0.75rem' }}>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
+                            <label style={{ display: 'flex', alignItems: 'center' }}><DollarSign size={16} /> Wartość Nieruchomości (zł)</label>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -188,7 +188,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><Repeat size={16} /> Prowizja (%)</label>
+                            <label style={{ display: 'flex', alignItems: 'center' }}><Repeat size={16} /> Prowizja (%)</label>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -211,7 +211,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}>
+                            <label style={{ display: 'flex', alignItems: 'center' }}>
                                 <DollarSign size={16} />
                                 <span style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                     Prowizja
@@ -275,9 +275,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><MinusCircle size={16} /> Koszty (zł)</label>
+                            <label><MinusCircle size={16} /> Koszty (zł)</label>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -289,30 +289,49 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                             />
                         </div>
                         <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><CreditCard size={16} /> Kredyt (zł)</label>
-                            <input
-                                type="text"
-                                inputMode="decimal"
-                                className="input-field"
-                                placeholder="0"
-                                value={formData.kredyt || ''}
-                                onFocus={e => e.target.select()}
-                                onChange={e => setFormData({ ...formData, kredyt: parseFloat(e.target.value) || 0 })}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label style={{ minHeight: '2.5rem', alignItems: 'flex-end', display: 'flex' }}><DollarSign size={16} /> Wykonanie {prowizjaMode === 'brutto' ? '(brutto)' : '(netto)'}</label>
+                            <label style={{ display: 'flex', alignItems: 'center' }}><DollarSign size={16} /> Wykonanie {prowizjaMode === 'brutto' ? '(brutto)' : '(netto)'}</label>
                             <input
                                 type="text"
                                 className="input-field"
                                 disabled
-                                value={(((formData.prowizjaNetto || 0) * (prowizjaMode === 'brutto' ? 1.23 : 1)) - (formData.koszty || 0) + (formData.kredyt || 0)).toFixed(2)}
+                                value={(((formData.prowizjaNetto || 0) * (prowizjaMode === 'brutto' ? 1.23 : 1)) - (formData.koszty || 0)).toFixed(2)}
                                 style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', fontWeight: 700 }}
                             />
                         </div>
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem', height: '3.5rem', fontSize: '1.125rem' }}>
+                    {/* Status transakcji */}
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.625rem 1rem', borderRadius: '10px',
+                        background: formData.statusTransakcji === 'prognozowana' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        border: `1px solid ${formData.statusTransakcji === 'prognozowana' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+                    }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: formData.statusTransakcji === 'prognozowana' ? '#fbbf24' : 'var(--accent-green)' }}>
+                            {formData.statusTransakcji === 'prognozowana' ? 'Prognozowana' : 'Zrealizowana'}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, statusTransakcji: formData.statusTransakcji === 'prognozowana' ? 'zrealizowana' : 'prognozowana' })}
+                            style={{
+                                width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', position: 'relative',
+                                background: formData.statusTransakcji === 'prognozowana' ? '#fbbf24' : 'var(--accent-green)',
+                                transition: 'background 0.2s'
+                            }}
+                        >
+                            <span style={{
+                                position: 'absolute', top: '2px',
+                                left: formData.statusTransakcji === 'prognozowana' ? '22px' : '2px',
+                                width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                                transition: 'left 0.2s'
+                            }} />
+                        </button>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {formData.statusTransakcji === 'prognozowana' ? 'Transakcja prawdopodobna, jeszcze nie podpisana' : 'Transakcja potwierdzona / podpisana'}
+                        </span>
+                    </div>
+
+                    <button type="submit" className="btn btn-primary" style={{ marginTop: '0.25rem', height: '3rem', fontSize: '1rem' }}>
                         <Save size={20} style={{ marginRight: '0.75rem' }} />
                         Zapisz Transakcję
                     </button>

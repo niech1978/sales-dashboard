@@ -5,13 +5,14 @@ export interface Transaction {
     rok: number;
     agent: string;
     typNieruchomosci: string;
-    strona: 'SPRZEDAŻ' | 'KUPNO' | 'WYNAJEM' | 'NAJEM' | string;
+    strona: 'SPRZEDAŻ' | 'KUPNO' | 'WYNAJEM' | 'NAJEM' | 'KREDYT' | string;
     transakcja: number | string;
     adres: string;
     prowizjaNetto: number;
     wartoscNieruchomosci: number;
     koszty?: number;       // Koszty transakcji - obniżają prowizję (domyślnie 0)
-    kredyt?: number;       // Kredyt - wraz z prowizją tworzą wykonanie (domyślnie 0)
+    kredyt?: number;       // DEPRECATED - zachowane dla starych danych, nowe transakcje kredytowe to strona='KREDYT'
+    statusTransakcji?: 'zrealizowana' | 'prognozowana';  // Status transakcji (domyślnie 'zrealizowana')
 }
 
 export interface Activity {

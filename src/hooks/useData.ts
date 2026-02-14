@@ -106,7 +106,6 @@ export function useData() {
                 // No tranches -> implicit single tranche (100%, zrealizowana, cala kwota)
                 if (tx.rok === year && tx.miesiac >= startMonth && tx.miesiac <= endMonth) {
                     const koszty = tx.koszty || 0
-                    const kredyt = tx.kredyt || 0
                     result.push({
                         transactionId: tx.id,
                         transaction: tx,
@@ -120,29 +119,27 @@ export function useData() {
                         kwotaPrognozaPelna: 0,
                         udzial: 1,
                         kosztyProporcjonalne: koszty,
-                        kredytProporcjonalny: kredyt,
-                        wykonanie: tx.prowizjaNetto - koszty + kredyt
+                        kredytProporcjonalny: 0,
+                        wykonanie: tx.prowizjaNetto - koszty
                     })
                 }
             } else {
                 // Has tranches -> filter by date range
                 const prowizjaNetto = tx.prowizjaNetto || 0
                 const koszty = tx.koszty || 0
-                const kredyt = tx.kredyt || 0
 
                 tranches.forEach(tr => {
                     if (tr.rok === year && tr.miesiac >= startMonth && tr.miesiac <= endMonth) {
                         const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
                         const kosztyProp = koszty * udzial
-                        const kredytProp = kredyt * udzial
                         const isZrealizowana = tr.status === 'zrealizowana'
                         const prob = isZrealizowana ? 100 : tr.prawdopodobienstwo
 
                         let wykonanie: number
                         if (isZrealizowana) {
-                            wykonanie = tr.kwota - kosztyProp + kredytProp
+                            wykonanie = tr.kwota - kosztyProp
                         } else {
-                            wykonanie = (tr.kwota - kosztyProp + kredytProp) * prob / 100
+                            wykonanie = (tr.kwota - kosztyProp) * prob / 100
                         }
 
                         result.push({
@@ -158,7 +155,7 @@ export function useData() {
                             kwotaPrognozaPelna: isZrealizowana ? 0 : tr.kwota,
                             udzial,
                             kosztyProporcjonalne: kosztyProp,
-                            kredytProporcjonalny: kredytProp,
+                            kredytProporcjonalny: 0,
                             wykonanie
                         })
                     }

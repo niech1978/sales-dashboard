@@ -822,7 +822,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                 {selectedBranch ? `Top Agenci - ${selectedBranch}` : 'Top 10 Agentów'}
                             </h3>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                                Ranking wg prowizji netto + kredyt
+                                Ranking wg wykonania (prowizja - koszty)
                             </p>
                             <div style={{ height: Math.max(120, filteredAgents.length * 40 + 40), width: '100%' }}>
                                 <ResponsiveContainer width="100%" height="100%">
