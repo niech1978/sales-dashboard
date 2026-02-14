@@ -8,7 +8,8 @@ interface BranchTargetWithWykonanie extends Omit<BranchTarget, 'wykonanie_kwota'
     prognoza_kwota: number  // realized + weighted forecast (non-realized tranches * probability)
 }
 
-// Helper: calculate wykonanie for a transaction or its tranches within a given month
+// Helper: calculate wykonanie (prognoza) for a transaction or its tranches within a given month
+// Uses tranche kwota directly - koszty/kredyt are transaction-level, not distributed to tranches
 function calcWykonanieForMonth(
     tx: Transaction,
     month: number,
@@ -16,36 +17,22 @@ function calcWykonanieForMonth(
     txTranches: TransactionTranche[] | undefined
 ): number {
     if (!txTranches || txTranches.length === 0) {
-        // No tranches: all wykonanie in the transaction's own month
         if (tx.miesiac === month && tx.rok === year) {
-            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+            return tx.prowizjaNetto || 0
         }
         return 0
     }
 
-    // Has tranches: sum wykonanie of tranches in this month
-    const prowizjaNetto = tx.prowizjaNetto || 0
-    const koszty = tx.koszty || 0
-    const kredyt = tx.kredyt || 0
-
     return txTranches
         .filter(tr => tr.miesiac === month && tr.rok === year)
         .reduce((sum, tr) => {
-            const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
-            const kosztyProp = koszty * udzial
-            const kredytProp = kredyt * udzial
             const isZrealizowana = tr.status === 'zrealizowana'
             const prob = isZrealizowana ? 100 : tr.prawdopodobienstwo
-
-            if (isZrealizowana) {
-                return sum + (tr.kwota - kosztyProp + kredytProp)
-            } else {
-                return sum + (tr.kwota - kosztyProp + kredytProp) * prob / 100
-            }
+            return sum + tr.kwota * prob / 100
         }, 0)
 }
 
-// Helper: calculate only realized (zrealizowana) wykonanie for a transaction in a given month
+// Helper: calculate only realized (zrealizowana) kwota for a transaction in a given month
 function calcZrealizowaneForMonth(
     tx: Transaction,
     month: number,
@@ -53,26 +40,15 @@ function calcZrealizowaneForMonth(
     txTranches: TransactionTranche[] | undefined
 ): number {
     if (!txTranches || txTranches.length === 0) {
-        // No tranches: transaction is considered fully realized
         if (tx.miesiac === month && tx.rok === year) {
-            return (tx.prowizjaNetto || 0) - (tx.koszty || 0) + (tx.kredyt || 0)
+            return tx.prowizjaNetto || 0
         }
         return 0
     }
 
-    // Has tranches: only count realized ones (status === 'zrealizowana')
-    const prowizjaNetto = tx.prowizjaNetto || 0
-    const koszty = tx.koszty || 0
-    const kredyt = tx.kredyt || 0
-
     return txTranches
         .filter(tr => tr.miesiac === month && tr.rok === year && tr.status === 'zrealizowana')
-        .reduce((sum, tr) => {
-            const udzial = prowizjaNetto > 0 ? tr.kwota / prowizjaNetto : 0
-            const kosztyProp = koszty * udzial
-            const kredytProp = kredyt * udzial
-            return sum + (tr.kwota - kosztyProp + kredytProp)
-        }, 0)
+        .reduce((sum, tr) => sum + tr.kwota, 0)
 }
 
 // Helper: calculate total year wykonanie for a transaction
