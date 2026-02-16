@@ -15,7 +15,7 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
     // Manager może dodawać tylko do swojego oddziału
     const defaultOddzial = userRole === 'manager' && userOddzial ? userOddzial : 'Kraków'
 
-    const [prowizjaMode, setProwizjaMode] = useState<'netto' | 'brutto'>('netto')
+    const [prowizjaMode, setProwizjaMode] = useState<'netto' | 'brutto'>('brutto')
     const [prowizjaInput, setProwizjaInput] = useState('')
     const [pctInput, setPctInput] = useState('')
 
