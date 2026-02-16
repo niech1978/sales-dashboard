@@ -176,13 +176,19 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                 onFocus={e => e.target.select()}
                                 onChange={e => {
                                     const val = parseFloat(e.target.value) || 0;
-                                    const netto = formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0
-                                        ? (formData.prowizjaNetto / formData.wartoscNieruchomosci) * val
-                                        : formData.prowizjaNetto;
-                                    setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: netto });
-                                    if (netto) {
+                                    const pct = parseFloat(pctInput) || 0;
+                                    let netto: number | undefined;
+                                    if (pct > 0 && val > 0) {
+                                        const amount = (val * pct) / 100;
+                                        netto = prowizjaMode === 'brutto' ? amount / 1.23 : amount;
+                                        setProwizjaInput(String(Math.round(amount * 100) / 100));
+                                    } else if (formData.prowizjaNetto && formData.prowizjaNetto > 0 && formData.wartoscNieruchomosci && formData.wartoscNieruchomosci > 0) {
+                                        netto = (formData.prowizjaNetto / formData.wartoscNieruchomosci) * val;
                                         setProwizjaInput(prowizjaMode === 'brutto' ? (netto * 1.23).toFixed(2) : String(Math.round(netto * 100) / 100));
+                                    } else {
+                                        netto = formData.prowizjaNetto;
                                     }
+                                    setFormData({ ...formData, wartoscNieruchomosci: val, prowizjaNetto: netto });
                                 }}
                                 placeholder="0"
                             />
@@ -203,8 +209,9 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
                                         const pct = parseFloat(raw) || 0;
                                         if (formData.wartoscNieruchomosci) {
                                             const amount = (formData.wartoscNieruchomosci * pct) / 100;
-                                            setFormData(prev => ({ ...prev, prowizjaNetto: amount }));
-                                            setProwizjaInput(prowizjaMode === 'brutto' ? (amount * 1.23).toFixed(2) : String(Math.round(amount * 100) / 100));
+                                            const netto = prowizjaMode === 'brutto' ? amount / 1.23 : amount;
+                                            setFormData(prev => ({ ...prev, prowizjaNetto: netto }));
+                                            setProwizjaInput(prowizjaMode === 'brutto' ? String(Math.round(amount * 100) / 100) : String(Math.round(amount * 100) / 100));
                                         }
                                     }
                                 }}
