@@ -90,7 +90,8 @@ function calcTotalWykonanie(
 export function usePerformanceData(
     year: number = 2026,
     transactions: Transaction[] = [],
-    tranchesByTransaction?: Map<string, TransactionTranche[]>
+    tranchesByTransaction?: Map<string, TransactionTranche[]>,
+    userOddzial?: string | null
 ) {
     const [agentPerformance, setAgentPerformance] = useState<AgentPerformance[]>([])
     const [branchTargetsFromDb, setBranchTargetsFromDb] = useState<BranchTarget[]>([])
@@ -145,7 +146,7 @@ export function usePerformanceData(
 
     // Calculate wykonanie from transactions per branch per month
     const branchTargets: BranchTargetWithWykonanie[] = useMemo(() => {
-        const branches = ['Kraków', 'Warszawa', 'Olsztyn']
+        const branches = userOddzial ? [userOddzial] : ['Kraków', 'Warszawa', 'Olsztyn']
         const result: BranchTargetWithWykonanie[] = []
 
         branches.forEach(branch => {
@@ -181,7 +182,7 @@ export function usePerformanceData(
         })
 
         return result
-    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction])
+    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction, userOddzial])
 
     // Calculate wykonanie (prowizja - koszty) from transactions for each agent
     const agentPerformanceWithProwizja = useMemo(() => {
@@ -285,7 +286,7 @@ export function usePerformanceData(
         const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru']
         return months.map((name, index) => {
             const month = index + 1
-            const monthTargets = branchTargetsFromDb.filter(t => t.miesiac === month)
+            const monthTargets = branchTargetsFromDb.filter(t => t.miesiac === month && (!userOddzial || t.oddzial === userOddzial))
             const plan = monthTargets.reduce((sum, t) => sum + (t.plan_kwota || 0), 0)
 
             // Wykonanie from transactions (with tranche support)
@@ -296,7 +297,7 @@ export function usePerformanceData(
 
             return { name, plan, wykonanie }
         })
-    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction])
+    }, [branchTargetsFromDb, yearTransactions, year, tranchesByTransaction, userOddzial])
 
     return {
         agentPerformance: agentPerformanceWithProwizja, // prowizja from transactions

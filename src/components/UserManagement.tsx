@@ -583,13 +583,13 @@ const UserManagement = () => {
                                                 </button>
                                             )}
                                         </td>
-                                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                        <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
+                                            <div className="user-actions" style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                                                 {!user.auth_user_id && (
                                                     <button
                                                         className="btn"
                                                         style={{
-                                                            padding: '0.5rem',
+                                                            padding: '0.35rem',
                                                             color: 'var(--accent-blue)',
                                                             opacity: invitingUser === user.id ? 0.5 : 1
                                                         }}
@@ -597,25 +597,25 @@ const UserManagement = () => {
                                                         disabled={invitingUser === user.id}
                                                         title="Wyślij zaproszenie (link do ustawienia hasła)"
                                                     >
-                                                        {invitingUser === user.id ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                                        {invitingUser === user.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                                                     </button>
                                                 )}
                                                 <button
                                                     className="btn"
-                                                    style={{ padding: '0.5rem' }}
+                                                    style={{ padding: '0.35rem' }}
                                                     onClick={() => startEditing(user)}
                                                     title="Edytuj"
                                                 >
-                                                    <Edit2 size={16} />
+                                                    <Edit2 size={14} />
                                                 </button>
                                                 {!isSuperadmin(user) && (
                                                     <button
                                                         className="btn"
-                                                        style={{ padding: '0.5rem', color: '#ef4444' }}
+                                                        style={{ padding: '0.35rem', color: '#ef4444' }}
                                                         onClick={() => handleDeleteUser(user.id, user.email)}
                                                         title="Usuń"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash2 size={14} />
                                                     </button>
                                                 )}
                                             </div>

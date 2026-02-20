@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Wallet, TrendingUp, Briefcase, Users } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import type { Transaction, EffectiveTranche } from '../types'
 
 interface SummaryViewProps {
@@ -175,19 +175,27 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={branchData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <defs>
-                                    <linearGradient id="summaryBarGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={1} />
-                                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.6} />
+                                    <linearGradient id="barGrad-Kraków" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
+                                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0.6} />
+                                    </linearGradient>
+                                    <linearGradient id="barGrad-Warszawa" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#ec4899" stopOpacity={1} />
+                                        <stop offset="100%" stopColor="#ec4899" stopOpacity={0.6} />
+                                    </linearGradient>
+                                    <linearGradient id="barGrad-Olsztyn" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={1} />
+                                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.6} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                <XAxis dataKey="name" stroke="var(--text-muted)" axisLine={false} tickLine={false} />
+                                <XAxis dataKey="name" stroke="var(--text-muted)" axisLine={false} tickLine={false} tick={{ fontSize: 13 }} />
                                 <YAxis
-                                    width={100}
+                                    width={80}
                                     stroke="var(--text-muted)"
                                     axisLine={false}
                                     tickLine={false}
-                                    tickFormatter={(v) => `${v.toLocaleString('pl-PL')} zł`}
+                                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                                 />
                                 <Tooltip
                                     contentStyle={{
@@ -197,20 +205,22 @@ const SummaryView = ({ transactions, allDbTransactions, dateRange, getEffectiveT
                                         boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
                                         backdropFilter: 'blur(10px)'
                                     }}
-                                    itemStyle={{ color: 'var(--primary)', fontWeight: 600 }}
                                     labelStyle={{ color: 'white', fontWeight: 700, marginBottom: '0.5rem' }}
                                     formatter={(value: number | undefined) => [`${formatCurrency(value)} zł`, 'Wykonanie']}
                                     cursor={{ fill: 'rgba(99, 102, 241, 0.1)', radius: 8 }}
                                 />
                                 <Bar
                                     dataKey="value"
-                                    fill="url(#summaryBarGradient)"
                                     radius={[8, 8, 0, 0]}
-                                    barSize={40}
+                                    barSize={50}
                                     animationDuration={800}
                                     animationEasing="ease-out"
                                     style={{ filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))' }}
-                                />
+                                >
+                                    {branchData.map((entry) => (
+                                        <Cell key={entry.name} fill={`url(#barGrad-${entry.name})`} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

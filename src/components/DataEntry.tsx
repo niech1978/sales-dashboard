@@ -54,6 +54,8 @@ const DataEntry = ({ agents, availableYears, onAdd, onClose, userRole = 'admin',
             <div className="glass-card modal-card" style={{
                 width: '100%',
                 maxWidth: '600px',
+                maxHeight: '95vh',
+                overflowY: 'auto',
                 position: 'relative',
                 padding: '1.25rem 1.5rem'
             }}>

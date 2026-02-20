@@ -310,12 +310,21 @@ h3 {
 }
 
 @media (max-width: 640px) {
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+
   .modal-card {
-    padding: 1.5rem !important;
+    padding: 1rem 1rem !important;
+    max-height: 95vh !important;
+    overflow-y: auto !important;
+    border-radius: 1rem !important;
   }
 
   .modal-title {
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
   }
 
   .main-content {
@@ -335,6 +344,11 @@ h3 {
     border-radius: 1rem;
   }
 
+  /* Stack form grids on mobile */
+  .modal-card form > div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
   table th, table td {
     padding: 0.5rem 0.4rem !important;
     font-size: 0.75rem !important;
@@ -347,6 +361,12 @@ h3 {
   .table-scroll-shadow::after {
     width: 20px;
     background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.8));
+  }
+
+  /* UserManagement action buttons - wrap on mobile */
+  .user-actions {
+    flex-wrap: wrap;
+    gap: 0.25rem !important;
   }
 }
 

@@ -361,7 +361,7 @@ const PlansTable = ({ branchTargets, selectedYear, userRole, userOddzial, onEdit
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem' }}>
                     <Target size={22} color="var(--accent-pink)" />
-                    Plany miesięczne {selectedYear}
+                    Plany miesięczne {selectedYear}{isManager ? ` - ${userOddzial}` : ''}
                 </h3>
                 {(userRole === 'admin' || userRole === 'superadmin') && (
                     <button
@@ -656,7 +656,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
         monthlyTargetsData,
         loading,
         refreshData
-    } = usePerformanceData(selectedYear, transactions, tranchesByTransaction)
+    } = usePerformanceData(selectedYear, transactions, tranchesByTransaction, userRole === 'manager' ? userOddzial : null)
 
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
 
@@ -829,7 +829,7 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                     <BarChart
                                         data={filteredAgents}
                                         layout="vertical"
-                                        margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={true} vertical={false} />
                                         <XAxis
@@ -883,7 +883,9 @@ const PerformanceView = ({ year: initialYear = new Date().getFullYear(), agents 
                                 Plan vs Wykonanie {selectedYear}
                             </h3>
                             <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                                Cele miesięczne wszystkich oddziałów
+                                {userRole === 'manager' && userOddzial
+                                    ? `Cele miesięczne oddziału ${userOddzial}`
+                                    : 'Cele miesięczne wszystkich oddziałów'}
                             </p>
                             <div style={{ height: '400px', width: '100%' }}>
                                 <ResponsiveContainer width="100%" height="100%">
